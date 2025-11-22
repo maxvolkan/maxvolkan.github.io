@@ -1,28 +1,122 @@
-const langBtn = document.getElementById("langBtn");
-const bio = document.getElementById("bio");
+document.addEventListener("DOMContentLoaded", () => {
+	// DYNAMIC DATE
+	const el = document.getElementById("dateLabel");
+	const now = new Date();
+	const months = [
+		"January", "February", "March", "April", "May", "June", "July",
+		"August", "September", "October", "November", "December"
+	];
+	el.textContent = `${months[now.getMonth()].toUpperCase()} ${now.getDate()}`;
 
-let lang = "EN";
+	// THEME TOGGLE
+	const themeBtn = document.getElementById("themeToggle");
+	themeBtn.addEventListener("click", () => {
+		document.body.classList.toggle("dark");
+		themeBtn.textContent = document.body.classList.contains("dark") ? "[ ☀ ]" : "[ ☾ ]";
+	});
+});
+// PROJECT DATABASE ------------------------------------------------
 
-langBtn.onclick = () => {
-	lang = lang === "EN" ? "JP" : "EN";
-	langBtn.textContent = `[ ${lang} ]`;
+// const PROJECT_ICONS = {
+// 	godot: "&#xe7ee;",       // Godot
+// 	javascript: "󰌞",        // JS
+// 	python: "󰌠",           // Python
+// 	csharp: "󰌛",           // C#
+// 	unity: "󰎁",           // Unity
+// 	web: "󰖟",             // HTML/CSS
+// };
+const PROJECT_ICON_MAP = {
+	godot: "nf-dev-godot",
+	matlab: "nf-md-math_integral",
+	javascript: "nf-md-language_javascript",
+	python: "nf-md-language_python",
+	csharp: "nf-md-language_csharp",
+	html: "nf-md-language_html5",
+	css: "nf-md-language_css3",
+	unity: "nf-custom-unity",
+	cpp: "nf-md-language_cpp",
+}
+document.addEventListener("DOMContentLoaded", () => {
 
-	if (lang === "JP") {
-		bio.textContent =
-			"test";
-	} else {
-		bio.textContent =
-			"test";
+	document.querySelectorAll(".project-title").forEach(el => {
+		const techList = el.dataset.tech?.split(",").map(t => t.trim()) || [];
+		let iconsHTML = "";
+
+		techList.forEach(tech => {
+			const cls = PROJECT_ICON_MAP[tech.toLowerCase()];
+			if (cls) {
+				iconsHTML += `<i class="project-icon ${cls}"></i>`;
+			}
+		});
+
+		if (iconsHTML.length > 0) {
+			// APPEND instead of prepend
+			el.innerHTML = `${el.innerHTML} ${iconsHTML}`;
+		}
+	});
+
+});
+const monitor = document.getElementById("monitor");
+const monitorMedia = document.getElementById("monitorMedia");
+const monitorCaption = document.getElementById("monitorCaption");
+const projectData = {
+	autogrotto: {
+		media: [
+			"assets/games/autogrotto/autogrotto_mine.webp",
+			"assets/games/autogrotto/autogrotto_scan.webp",
+			"assets/games/autogrotto/bot_builder.webp",
+		],
+		caption: "AutoGrotto — Procedural cave mining and automation."
+	},
+
+	samplechop: {
+		media: [
+			"assets/games/samplechop/sampler_demo.webp",
+		],
+		caption: "SampleChop — Minimal sampler-based rhythm game."
+	},
+
+	neurobeat: {
+		media: [
+			"assets/games/neurobeat/neurobeat_main_menu.webp",
+			"assets/games/neurobeat/neurobeat_gameplay.webp",
+			"assets/games/neurobeat/bio_signals.webp",
+		],
+		caption: "NeuroBeat — Multimodal BCI rhythm prototype."
 	}
 };
+let currentProject = null;
+let currentIndex = 0;
 
+function openProject(key) {
+	const data = projectData[key];
+	if (!data || data.media.length === 0) return;
 
-const ctx = canvas.getContext("2d");
+	currentProject = data;
+	currentIndex = 0;
 
-function resize() {
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
+	showMedia(currentIndex);
+	monitorCaption.textContent = data.caption;
+
+	monitor.classList.add("open");
 }
-resize();
-window.onresize = resize;
 
+function showMedia(i) {
+	monitorMedia.src = currentProject.media[i];
+}
+
+document.getElementById("monitorPrev").onclick = () => {
+	if (!currentProject) return;
+	currentIndex = (currentIndex - 1 + currentProject.media.length) % currentProject.media.length;
+	showMedia(currentIndex);
+};
+
+document.getElementById("monitorNext").onclick = () => {
+	if (!currentProject) return;
+	currentIndex = (currentIndex + 1) % currentProject.media.length;
+	showMedia(currentIndex);
+};
+
+document.getElementById("monitorClose").onclick = () => {
+	monitor.classList.remove("open");
+};

@@ -5,52 +5,118 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Max Volkan</title>
-	<link rel="stylesheet" href="styles.css" />
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nerd-fonts-webfonts/css/nerd-fonts-generated.css">
 </head>
 
-<body>
+<body class="dark">
 
+	<!-- CORNER ELEMENTS -->
 	<button class="corner-btn top-left" id="homeBtn">[ * ]</button>
-
-	<div class="corner-label top-right">NOVEMBER 21</div>
-
+	<div class="corner-label top-right" id="dateLabel"></div>
 	<button class="corner-btn bottom-left" id="langBtn">[ EN ]</button>
+	<button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
 
-	<button class="corner-btn bottom-right">>_</button>
 
-	<div class="grid-container">
 
-		<div class="panel left">
+	<!-- MAIN CONTENT -->
+	<main class="layout">
+
+		<section class="left">
 			<h1 class="name">
 				<span>Max</span><br>
 				<span>Volkan</span>
 			</h1>
 
+			<!-- <nav class="links"> -->
+			<!-- 	<a href="#" class="link-item">RESEARCH_INDEX ↗</a> -->
+			<!-- 	<a href="#" class="link-item">PROJECT_ARCHIVE ↗</a> -->
+			<!-- </nav> -->
 
-			<div class="links">
-				<a href="#" class="link-item">RESEARCH_INDEX ↗</a>
-				<a href="#" class="link-item">PROJECT_ARCHIVE ↗</a>
+			<div class="info-panel">
+				<div class="label">FIELD//Affiliation</div>
+				<p>Human and Engineered Environmental Studies</p>
+				<p>University of Tokyo, Graduate School Frontier Sciences</p>
+				<p>Wearable Sensing & Multimodal Systems</p>
 			</div>
+		</section>
 
-			<div class="info">
-				<p>Student at the University of Tokyo</p>
-				<p>Graduate School of Frontier Sciences</p>
-				<p>Dept. of Human & Engineered Environmental Sciences</p>
-			</div>
-		</div>
+		<section class="right">
+			<p class="bio">
+				[placeholder: put what I do]
+			</p>
+		</section>
 
-		<!-- RIGHT PANEL -->
-		<div class="panel right">
-			<p class="bio" id="bio">
+	</main>
+	<!-- SCROLL SECTIONS -->
+	<section class="block" id="researchIndex">
+		<h2>RESEARCH</h2>
+		<div class="paper-item">
+			<p class="paper-title">
+				A Comparative Analysis of Brain and Heart Indexes as Biomarkers of Mental Workload
 			</p>
 
+			<div class="paper-links">
+				<a href="papers/brain-heart-preprint.pdf" target="_blank">[preprint]</a>
+				<a href="papers/brain-heart-poster.pdf" target="_blank">[poster]</a>
+			</div>
+			<span class="mini-meta">IEEJ EIS 2025</span>
 		</div>
 
+		<div class="paper-item">
+			<p class="paper-title">
+				How does subjective confidence influence multisensory integration?
+			</p>
 
-	</div>
+			<div class="paper-links">
+				<a href="https://doi.org/10.1167/jov.24.10.477" target="_blank">[abstract]</a>
+			</div>
 
-	<script src="script.js"></script>
+			<span class="mini-meta">Journal of Vision, VSS 2024</span>
+		</div>
+	</section>
 
+	<section class="block" id="projectArchive">
+		<h2>PROJECTS</h2>
+		<div class="project-item">
+			<p class="project-title" onclick="openProject('autogrotto')" data-type="godot">
+				AutoGrotto - Procedural Cave Mining Game
+			</p>
+		</div>
+
+		<div class="project-item">
+			<p class="project-title" onclick="openProject('samplechop')" data-type="godot">
+				SampleChop — Audio Sampler Rhythm Game
+			</p>
+		</div>
+
+		<div class="project-item">
+			<p class="project-title" onclick="openProject('neurobeat')" data-tech="godot, matlab">
+				NeuroBeat — BCI Rhythm Game Prototype
+			</p>
+		</div>
+		<a class="project-title" href='https://max-reformed.itch.io/spellcheck'>SpellCheck (error-driven typing
+			game)</a>
+	</section>
+	<div id="monitor" class="monitor">
+
+		<button class="monitor-tab" id="monitorClose">›</button>
+
+		<div class="monitor-content">
+
+			<div class="monitor-media-wrapper">
+				<img id="monitorMedia" src="" alt="">
+			</div>
+
+			<div class="monitor-caption-bar">
+				<button class="media-nav small" id="monitorPrev">‹</button>
+
+				<p id="monitorCaption"></p>
+
+				<button class="media-nav small" id="monitorNext">›</button>
+			</div>
+		</div>
+		<script src="script.js"></script>
 </body>
 
 </html>
