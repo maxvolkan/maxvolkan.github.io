@@ -1,0 +1,119 @@
+/* GLOBAL */
+/* -------- Fonts -------- */
+@font-face {
+    font-family: 'Baekmuk Dotum';
+    src: url('./fonts/baekmuk-dotum-regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* -------- Base Styles -------- */
+body {
+    font-family: monospace;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16px;
+}
+
+/* -------- Headings -------- */
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Baekmuk Dotum';
+}
+
+.name,
+.name span {
+	font-family: 'Baekmuk Dotum';
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #050505;
+    color: #e6e6e6;
+    overflow: hidden;
+}
+
+a { text-decoration: none; color: inherit; }
+
+
+/* CORNER BUTTONS / LABELS */
+.corner-btn, .corner-label {
+    position: fixed;
+    font-size: 16;
+    letter-spacing: 0.18em;
+    background: transparent;
+    color: #aaa;
+    border: 0px solid rgba(255,255,255,0.15);
+    padding: 1rem;
+    z-index: 99;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.corner-btn:hover {
+    background: white;
+    color: black;
+}
+
+/* CORNER POSITIONS */
+.top-left { top: 20px; left: 20px; }
+.top-right { top: 20px; right: 20px; border: none; }
+.bottom-left { bottom: 20px; left: 20px; }
+.bottom-right { bottom: 20px; right: 20px; }
+
+/* GRID LAYOUT */
+.grid-container {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100vh;
+    padding: 100px 80px;
+    gap: 40px;
+    z-index: 10;
+}
+
+/* PANELS */
+.panel {
+    padding: 40px;
+    /* border: 1px solid rgba(255,255,255,0.1); */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.name {
+    font-size: 54px;
+    margin: 0 0 20px 0;
+    font-weight: 600;
+}
+
+.subtitle {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-bottom: 30px;
+}
+
+.links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.link-item {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    opacity: 0.7;
+}
+
+.link-item:hover {
+    opacity: 1;
+}
+
+.info p {
+    font-size: 11px;
+    opacity: 0.5;
+    margin: 3px 0;
+}
+
