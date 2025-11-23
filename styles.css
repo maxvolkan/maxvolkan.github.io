@@ -26,7 +26,7 @@ a:hover::after {
     width: 100%;
 }
 body {
-  --bg: #F1F2F6;
+  --bg: #ece9e4;
   --text: #111;
   --border: #111;
   --link: #0044cc;
@@ -43,7 +43,11 @@ body {
 
 /* DARK MODE */
 body.dark {
-  --bg: #181113;
+  --bg: #1D1E1F;
+  /* --text: #111; */
+  /* --border: #111; */
+  /* --link: #0044cc; */
+  /* --link-hover: #000000; */
   --text: #f2f2f2;
   --border: #f2f2f2;
 
@@ -117,15 +121,50 @@ body.dark {
 /* RIGHT SIDE --------------------------------------------- */
 .right {
   width: 45%;
-  max-width: 460px;
+  max-width: 600px;
+}
+.hero-photo img {
+	height: 340px;
+	
+	
 }
 
+
 .bio {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.65;
   border-left: 1px solid var(--border);
   padding-left: 18px;
-  opacity: 0.85;
+  opacity: 1;
+}
+/* Single column layout for bio.html */
+.single-column {
+    display: flex;
+    justify-content: center;
+    margin-top: 12vh;
+}
+
+.bio-page {
+    max-width: 620px;
+    padding: 0 12px;
+}
+
+.bio-page h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.bio-page h2 {
+    font-size: 20px;
+    margin-top: 32px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+}
+
+.bio-page p {
+    margin-bottom: 16px;
+    line-height: 1.65;
 }
 
 /* BLOCK SECTIONS (SCROLL DOWN) ---------------------------- */

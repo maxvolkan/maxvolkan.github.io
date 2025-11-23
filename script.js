@@ -8,6 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	];
 	el.textContent = `${months[now.getMonth()].toUpperCase()} ${now.getDate()}`;
 
+	document.getElementById("homebtn").onclick = () => {
+		window.location.href = "/";
+	};
 	// THEME TOGGLE
 	const themeBtn = document.getElementById("themeToggle");
 	themeBtn.addEventListener("click", () => {
@@ -50,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 
 		if (iconsHTML.length > 0) {
-			// APPEND instead of prepend
 			el.innerHTML = `${el.innerHTML} ${iconsHTML}`;
 		}
 	});
