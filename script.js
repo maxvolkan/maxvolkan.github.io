@@ -84,7 +84,7 @@ const projectData = {
 			"assets/games/neurobeat/neurobeat_gameplay.webp",
 			"assets/games/neurobeat/bio_signals.webp",
 		],
-		caption: "NeuroBeat — Multimodal BCI rhythm prototype."
+		caption: "NeuroBeat — Multimodal BCI rhythm game prototype."
 	}
 };
 let currentProject = null;

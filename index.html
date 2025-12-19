@@ -6,137 +6,165 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Max Volkan</title>
 	<link rel="stylesheet" href="styles.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nerd-fonts-webfonts/css/nerd-fonts-generated.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="dark">
+<body class="light">
+	<div class="page">
+		<button class="corner-btn top-left" id="homebtn">[ * ]</button>
+		<div class="corner-label top-right" id="dateLabel"></div>
+		<!-- <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button> -->
+		<button class="corner-btn bottom-right" id="themeToggle">[ ☀ ]</button>
 
-	<!-- CORNER ELEMENTS -->
-	<button class="corner-btn top-left" id="homebtn">[ * ]</button>
-	<div class="corner-label top-right" id="dateLabel"></div>
-	<button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
-	<button class="corner-btn bottom-right" id="themeToggle">[ ☀ ]</button>
+		<div class="hero-photo">
+			<img src="assets/photos/brain.webp">
+		</div>
+		<!-- <p>my brain</p> -->
+		<!-- <main class="layout"> -->
+		<!---->
+		<!-- 	<section class="left"> -->
+		<!-- 	</section> -->
+		<!---->
+		<!-- 	<section class="center"> -->
+		<!-- 	</section> -->
+		<!-- 	<section class="right"> -->
+		<!-- </section> -->
+		<!---->
+		<!-- </main> -->
 
+		<h1 class="name">
+			<span>Maxwell Volkan</span><br>
+		</h1>
 
+		<a href="/bio" class="link-item">...</a>
 
-	<!-- MAIN CONTENT -->
-	<main class="layout">
+		<div class="info-panel">
+			<h2>Affiliations<h2>
+					<div class="subitem-list">
+						<p class="degree"><a href='https://neuron.t.u-tokyo.ac.jp/'>Kotani &
+								Shimba Laboratory</a></p>
+						<p class="university">The University of Tokyo (Ongoing)</p>
+						<p>Fulbright Fellow (Japan, 2024-2025)</p>
+						<p class="university">The University of Tokyo (2025)</p>
+						<p>NASA GeneLab Analysis Working Group, AI/ML Division</p>
+						<p class="university">(Ongoing)</p>
 
-		<section class="left">
-			<h1 class="name">
-				<span>Max Volkan</span><br>
-			</h1>
+					</div>
+					<h4>Past Affiliations<h4>
+							<div class="subitem-list">
+								<p class="degree">Research Assistant, Samaha Lab</p>
+								<p>University of California, Santa
+									Cruz
+									(2024)</p>
+							</div>
+		</div>
 
-			<!-- <nav class="links"> -->
-			<!-- 	<a href="#" class="link-item">RESEARCH_INDEX ↗</a> -->
-			<!-- 	<a href="#" class="link-item">PROJECT_ARCHIVE ↗</a> -->
-			<!-- </nav> -->
-
-			<div class="info-panel">
-				<div class="label">Affiliation</div>
-				<p>The University of Tokyo, Graduate School of Frontier Sciences</p>
-				<p>Human and Engineered Environmental Studies</p>
-				<p>Graduate Student</p><br>
-				<p>NASA GeneLab Analysis Working Group, AI/ML Division</p>
-				<br>
-				<p>Fulbright Fellow (Japan, 2024-2025)</p>
-				<a href="/bio" class="link-item">read more... ↗</a>
+		<section class="block">
+			<h2>Education</h2>
+			<div class="subitem-list">
+				<p class="degree">M.Sc. in Human and Engineered Environmental Sciences
+				<p class="university">The University of Tokyo (Ongoing)</p>
+				<p class="degree">B.S. in Cognitive Science (with
+					Highest
+					Honors)
+				</p>
+				<p class="university">University of California, Santa
+					Cruz
+					(2024)</p>
 			</div>
 		</section>
 
-		<section class="center">
+		<section class="block" id="researchIndex">
+			<h2>Research</h2>
+			<div class="subitem-list">
+				<div class="paper-item">
+					<p class="paper-title">
+						A Comparative Analysis of Brain and Heart Indexes as Biomarkers of
+						Mental
+						Workload
+					</p>
+					<div class="paper-meta">
+						<div class="paper-links">
+							<a href="papers/brain-heart-preprint.pdf"
+								target="_blank">[preprint]</a>
+							<a href="papers/brain-heart-poster.pdf"
+								target="_blank">[poster]</a>
+						</div>
+						<span class="mini-meta">IEEJ EIS 2025</span>
+					</div>
+				</div>
+
+				<div class="paper-item">
+					<p class="paper-title">
+						How does subjective confidence influence multisensory
+						integration?
+					</p>
+					<div class="paper-meta">
+						<div class="paper-links">
+							<a href="https://doi.org/10.1167/jov.24.10.477"
+								target="_blank">[abstract]</a>
+						</div>
+
+						<span class="mini-meta">Journal of Vision, VSS 2024</span>
+					</div>
+				</div>
+			</div>
 		</section>
-		<section class="right">
 
-			<div class="hero-photo">
-				<img src="assets/photos/brain.webp">
+		<section class="block" id="projectArchive">
+			<h2>Projects</h2>
+			<div class="subitem-list">
+				<div class="project-item">
+					<p class="project-title" onclick="openProject('autogrotto')" data-type="godot">
+						AutoGrotto : Procedural Cave Mining Game
+					</p>
+				</div>
+
+				<div class="project-item">
+					<p class="project-title" onclick="openProject('samplechop')" data-type="godot">
+						SampleChop : Audio Sampler Rhythm Game
+					</p>
+				</div>
+
+				<div class="project-item">
+					<p class="project-title" onclick="openProject('neurobeat')"
+						data-tech="godot, matlab">
+						NeuroBeat : BCI Rhythm Game Prototype
+					</p>
+				</div>
+				<div class="project-item">
+					<p class="project-title">
+						<a class="project-title"
+							href='https://max-reformed.itch.io/spellcheck'>SpellCheck :
+							error-driven
+							typing
+							game</a>
+					</p>
+				</div>
 			</div>
-			<!-- <p class="bio"> -->
-			<!-- 	I am currently studying the brain and the autonomic nervous system. Specifically, my -->
-			<!-- 	research focuses on the brain-heart connection -->
-			<!-- 	and how it relates to mental fatigue. <br><br>I am also interested in teleological -->
-			<!-- 	questions -->
-			<!-- 	in -->
-			<!-- 	physiology (why phenomena such as fatigue, neural connectivity, and regulation exist -->
-			<!-- 	in the first place). -->
-			<!-- 	<br><br>I also develop games both inside and outside of research, including a recent -->
-			<!-- 	biosignal-controlled rhythm game for accessibility. -->
-			<!-- 	<br><br>Outside of work, I love listening to and making experimental electronic music -->
-			<!-- 	and -->
-			<!-- 	jazzy hip-hop beats, as well as creating digital audio-reactive art. -->
-			<!-- </p> -->
 		</section>
+		<div id="monitor" class="monitor">
 
-	</main>
-	<!-- SCROLL SECTIONS -->
-	<section class="block" id="researchIndex">
-		<h2>RESEARCH</h2>
-		<div class="paper-item">
-			<p class="paper-title">
-				A Comparative Analysis of Brain and Heart Indexes as Biomarkers of Mental Workload
-			</p>
+			<button class="monitor-tab" id="monitorClose">›</button>
 
-			<div class="paper-links">
-				<a href="papers/brain-heart-preprint.pdf" target="_blank">[preprint]</a>
-				<a href="papers/brain-heart-poster.pdf" target="_blank">[poster]</a>
+			<div class="monitor-content">
+
+				<div class="monitor-media-wrapper">
+					<img id="monitorMedia" src="" alt="">
+				</div>
+
+				<div class="monitor-caption-bar">
+					<button class="media-nav small" id="monitorPrev">‹</button>
+
+					<p id="monitorCaption"></p>
+
+					<button class="media-nav small" id="monitorNext">›</button>
+				</div>
 			</div>
-			<span class="mini-meta">IEEJ EIS 2025</span>
+			<script src="script.js"></script>
 		</div>
-
-		<div class="paper-item">
-			<p class="paper-title">
-				How does subjective confidence influence multisensory integration?
-			</p>
-
-			<div class="paper-links">
-				<a href="https://doi.org/10.1167/jov.24.10.477" target="_blank">[abstract]</a>
-			</div>
-
-			<span class="mini-meta">Journal of Vision, VSS 2024</span>
-		</div>
-	</section>
-
-	<section class="block" id="projectArchive">
-		<h2>PROJECTS</h2>
-		<div class="project-item">
-			<p class="project-title" onclick="openProject('autogrotto')" data-type="godot">
-				AutoGrotto - Procedural Cave Mining Game
-			</p>
-		</div>
-
-		<div class="project-item">
-			<p class="project-title" onclick="openProject('samplechop')" data-type="godot">
-				SampleChop — Audio Sampler Rhythm Game
-			</p>
-		</div>
-
-		<div class="project-item">
-			<p class="project-title" onclick="openProject('neurobeat')" data-tech="godot, matlab">
-				NeuroBeat — BCI Rhythm Game Prototype
-			</p>
-		</div>
-		<a class="project-title" href='https://max-reformed.itch.io/spellcheck'>SpellCheck (error-driven typing
-			game)</a>
-	</section>
-	<div id="monitor" class="monitor">
-
-		<button class="monitor-tab" id="monitorClose">›</button>
-
-		<div class="monitor-content">
-
-			<div class="monitor-media-wrapper">
-				<img id="monitorMedia" src="" alt="">
-			</div>
-
-			<div class="monitor-caption-bar">
-				<button class="media-nav small" id="monitorPrev">‹</button>
-
-				<p id="monitorCaption"></p>
-
-				<button class="media-nav small" id="monitorNext">›</button>
-			</div>
-		</div>
-		<script src="script.js"></script>
 </body>
 
 </html>
