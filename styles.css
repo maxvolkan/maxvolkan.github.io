@@ -468,30 +468,62 @@ body.dark .bottom-fade {
 }
 
 @media (max-width: 800px) {
-  body {
-    padding: 20px;
+  .page {
+    padding: 16px;
+margin-top: 16px;
+    max-width: 100%;
   }
 
   .layout {
-    flex-direction: column;
-    gap: 40px;
+    display: block;
+    margin-top: 12vh;
   }
 
-  .left, .right {
+  .left,
+  .right {
     width: 100%;
+    max-width: none;
+  }
+body {
+    font-size: 0.9rem;
   }
 
   .title {
-    font-size: 36px;
+    font-size: 2.2rem;
+    line-height: 1.15;
   }
 
-  .bio {
-    border-left: none;
-    padding-left: 0;
+  h1 {
+    font-size: 1.8rem;
   }
 
-  .info-panel {
-    border-left: none;
-    padding-left: 0;
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3, h4 {
+    font-size: 1rem;
+  }
+
+  .hero-photo img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    padding: 0;
+    margin-bottom: 1.5rem;
+  }
+.corner-btn,
+  .corner-label {
+    font-size: 18px;
+    padding: 8px 10px;
+  }
+
+  .top-left    { top: 12px; left: 12px; }
+  .top-right   { top: 12px; right: 12px; }
+  .bottom-left { bottom: 12px; left: 12px; }
+  .bottom-right{ bottom: 12px; right: 12px; }
+}
+  html, body {
+    overflow-x: hidden;
   }
 }
