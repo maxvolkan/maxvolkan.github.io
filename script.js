@@ -1,33 +1,3 @@
-document.addEventListener("DOMContentLoaded", () => {
-	// DYNAMIC DATE
-	const el = document.getElementById("dateLabel");
-	const now = new Date();
-	const months = [
-		"January", "February", "March", "April", "May", "June", "July",
-		"August", "September", "October", "November", "December"
-	];
-	el.textContent = `${months[now.getMonth()].toUpperCase()} ${now.getDate()}`;
-
-	document.getElementById("homebtn").onclick = () => {
-		window.location.href = "/";
-	};
-	// THEME TOGGLE
-	const themeBtn = document.getElementById("themeToggle");
-	themeBtn.addEventListener("click", () => {
-		document.body.classList.toggle("dark");
-		themeBtn.textContent = document.body.classList.contains("dark") ? "[ ☀ ]" : "[ ☾ ]";
-	});
-});
-// PROJECT DATABASE ------------------------------------------------
-
-// const PROJECT_ICONS = {
-// 	godot: "&#xe7ee;",       // Godot
-// 	javascript: "󰌞",        // JS
-// 	python: "󰌠",           // Python
-// 	csharp: "󰌛",           // C#
-// 	unity: "󰎁",           // Unity
-// 	web: "󰖟",             // HTML/CSS
-// };
 const PROJECT_ICON_MAP = {
 	godot: "nf-dev-godot",
 	matlab: "nf-md-math_integral",
@@ -41,6 +11,17 @@ const PROJECT_ICON_MAP = {
 }
 document.addEventListener("DOMContentLoaded", () => {
 
+	const el = document.getElementById("dateLabel");
+	const now = new Date();
+	const months = [
+		"January", "February", "March", "April", "May", "June", "July",
+		"August", "September", "October", "November", "December"
+	];
+	el.textContent = `${months[now.getMonth()].toUpperCase()} ${now.getDate()}`;
+
+	document.getElementById("homebtn").onclick = () => {
+		window.location.href = "/";
+	};
 	document.querySelectorAll(".project-title").forEach(el => {
 		const techList = el.dataset.tech?.split(",").map(t => t.trim()) || [];
 		let iconsHTML = "";
@@ -57,7 +38,43 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	const themeBtn = document.getElementById("themeToggle");
+	const savedTheme = localStorage.getItem("theme");
+
+	if (savedTheme === "dark") {
+		document.body.classList.add("dark");
+	}
+
+	updateThemeIcon();
+
+	themeBtn?.addEventListener("click", () => {
+		document.body.classList.toggle("dark");
+
+		const isDark = document.body.classList.contains("dark");
+		localStorage.setItem("theme", isDark ? "dark" : "light");
+
+		updateThemeIcon();
+	});
 });
+
+const savedTheme = localStorage.getItem("theme");
+
+if (!savedTheme) {
+	const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+	if (prefersDark) {
+		document.body.classList.add("dark");
+		localStorage.setItem("theme", "dark");
+	}
+}
+
+function updateThemeIcon() {
+	const themeBtn = document.getElementById("themeToggle");
+	if (!themeBtn) return;
+
+	themeBtn.textContent =
+		document.body.classList.contains("dark") ? "[ ☉ ]" : "[ ☾ ]";
+};
+
 const monitor = document.getElementById("monitor");
 const monitorMedia = document.getElementById("monitorMedia");
 const monitorCaption = document.getElementById("monitorCaption");
