@@ -54,7 +54,7 @@ h3, h4 {
 }
 
 body {
-  --bg: #fffff7;
+  --bg: #fbf6e8;
   --text-rgb: 0, 0, 0;
   --text: rgba(var(--text-rgb), 0.84);
  --text-muted: rgba(var(--text-rgb), 0.6);
@@ -107,6 +107,21 @@ body.dark {
 
 .corner-btn:hover {
   opacity: 1;
+}
+
+.coords {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  font-family: "Fira Mono", monospace;
+  font-size: 10px;
+  opacity: 0.12;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  letter-spacing: 0.1em;
 }
 
 .top-left    { top: 20px; left: 20px; }
@@ -163,16 +178,54 @@ body.dark {
 	font-size: 10px;
 }
 
-.hero-photo img {
+.hero-photo {
+  perspective: 900px;
+}
 
-  max-width: 700px;      
-  margin: auto;        
-	display: block;
-  padding: 0 20px;       
-	height: 15rem;
-	
-	margin-bottom: 2.5rem;
-	
+.hero-photo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.brain-hud {
+  /* tweak */
+  --hud-len: 24px;
+  --hud-thick: 5px;
+  --hud-pad-y: 8px;
+  --hud-pad-x: 10px;
+  --hud-rgb: var(--text-rgb);
+  --hud-alpha: 0.45;
+
+  position: relative;
+  display: inline-block;
+  padding: var(--hud-pad-y) var(--hud-pad-x);
+  background:
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top left    / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top left    / var(--hud-thick) var(--hud-len) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top right   / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top right   / var(--hud-thick) var(--hud-len) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom left / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom left / var(--hud-thick) var(--hud-len) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom right/ var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom right/ var(--hud-thick) var(--hud-len) no-repeat;
+}
+
+.brain-hud img,
+.brain-hud canvas {
+  display: block;
+  height: 15rem;
+  width: auto;
+
+  /* tweak */
+  mix-blend-mode: multiply;
+  filter: contrast(1.05);
+}
+
+body.dark .brain-hud img,
+body.dark .brain-hud canvas {
+  mix-blend-mode: screen;
+  filter: contrast(1.0) brightness(1.1);
 }
 
 

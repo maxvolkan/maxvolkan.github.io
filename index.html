@@ -15,11 +15,14 @@
         <div class="page">
                 <button class="corner-btn top-left" id="homebtn">[ * ]</button>
                 <div class="corner-label top-right" id="dateLabel"></div>
-                <!-- <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button> -->
+                <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
+                <div class="corner-label coords" id="coordsLabel">[ x:0000 y:0000 ]</div>
                 <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
 
                 <div class="hero-photo">
-                        <img src="assets/photos/brain.webp">
+                        <div class="brain-hud">
+                                <img src="assets/photos/brain.webp">
+                        </div>
                 </div>
                 <!-- <p>my brain</p> -->
                 <!-- <main class="layout"> -->
@@ -43,43 +46,43 @@
                 <a href="mailto:maxwell@neuron.t.u-tokyo.ac.jp" class="link-item">maxwell@neuron.t.u-tokyo.ac.jp</a>
 
                 <div class="info-panel">
-                        <h2>Affiliations<h2>
+                        <h2 data-ja="所属">Affiliations<h2>
                                         <div class="subitem-list">
                                                 <p class="degree"><a href='https://neuron.t.u-tokyo.ac.jp/'>Kotani &
                                                                 Shimba Laboratory</a></p>
-                                                <p class="university">The University of Tokyo (Ongoing)</p>
-                                                <p>Fulbright Fellow (Japan, 2024-2025)</p>
-                                                <p class="university">The University of Tokyo (2025)</p>
-                                                <p>NASA GeneLab Analysis Working Group, AI/ML Division</p>
-                                                <p class="university">(Ongoing)</p>
+                                                <p class="university" data-ja="東京大学(在籍中)">The University of Tokyo (Ongoing)</p>
+                                                <p data-ja="Fulbright フェロー (日本, 2024-2025)">Fulbright Fellow (Japan, 2024-2025)</p>
+                                                <p class="university" data-ja="東京大学 (2025)">The University of Tokyo (2025)</p>
+                                                <p data-ja="NASA GeneLab 解析ワーキンググループ, AI/ML 部門">NASA GeneLab Analysis Working Group, AI/ML Division</p>
+                                                <p class="university" data-ja="(在籍中)">(Ongoing)</p>
 
                                         </div>
-                                        <h4>Past Affiliations<h4>
+                                        <h4 data-ja="過去の所属">Past Affiliations<h4>
                                                         <div class="subitem-list">
-                                                                <p class="degree">Research Assistant, Samaha Lab</p>
-                                                                <p>University of California, Santa
+                                                                <p class="degree" data-ja="研究助手, Samaha Lab">Research Assistant, Samaha Lab</p>
+                                                                <p data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of California, Santa
                                                                         Cruz
                                                                         (2024)</p>
                                                         </div>
                 </div>
 
                 <section class="block">
-                        <h2>Education</h2>
+                        <h2 data-ja="学歴">Education</h2>
                         <div class="subitem-list">
-                                <p class="degree">M.Sc. in Human and Engineered Environmental Sciences
-                                <p class="university">The University of Tokyo (Ongoing)</p>
-                                <p class="degree">B.S. in Cognitive Science with
+                                <p class="degree" data-ja="人間環境学 修士課程">M.Sc. in Human and Engineered Environmental Sciences
+                                <p class="university" data-ja="東京大学 (在籍中)">The University of Tokyo (Ongoing)</p>
+                                <p class="degree" data-ja="認知科学 学士 (最優等)">B.S. in Cognitive Science with
                                         Highest
                                         Honors
                                 </p>
-                                <p class="university">University of California, Santa
+                                <p class="university" data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of California, Santa
                                         Cruz
                                         (2024)</p>
                         </div>
                 </section>
 
                 <section class="block" id="researchIndex">
-                        <h2>Research</h2>
+                        <h2 data-ja="研究">Research</h2>
                         <div class="subitem-list">
                                 <div class="paper-item">
                                         <p class="paper-title">
@@ -129,7 +132,7 @@
                 </section>
 
                 <section class="block" id="projectArchive">
-                        <h2>Projects</h2>
+                        <h2 data-ja="プロジェクト">Projects</h2>
                         <div class="subitem-list">
                                 <div class="project-item">
                                         <p class="project-title" onclick="openProject('autogrotto')" data-type="godot">
@@ -180,6 +183,7 @@
                                 </div>
                         </div>
                         <script src="script.js"></script>
+                        <script src="glyphs.js"></script>
                 </div>
 </body>
 

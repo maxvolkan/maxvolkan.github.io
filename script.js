@@ -9,15 +9,125 @@ const PROJECT_ICON_MAP = {
 	unity: "nf-custom-unity",
 	cpp: "nf-md-language_cpp",
 }
+// tweak
+const SCRAMBLE_MS = 600;
+const SCRAMBLE_GLYPHS = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠿⡿▪▫■□◇◆◼◻▣▤▥▦▧▨▩";
+
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS_JA = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+
+function renderDate(lang) {
+	const el = document.getElementById("dateLabel");
+	if (!el) return;
+	const now = new Date();
+	if (lang === "ja") el.textContent = `${MONTHS_JA[now.getMonth()]} ${now.getDate()}日`;
+	else el.textContent = `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
+}
+
+function applyLang(lang) {
+	document.body.classList.toggle("lang-ja", lang === "ja");
+	document.querySelectorAll("[data-ja]").forEach(el => {
+		if (!el.dataset.en) el.dataset.en = el.textContent.trim();
+		el.textContent = lang === "ja" ? el.dataset.ja : el.dataset.en;
+	});
+	renderDate(lang);
+	const btn = document.getElementById("langbtn");
+	if (btn) btn.textContent = lang === "ja" ? "[ 日 ]" : "[ EN ]";
+	localStorage.setItem("lang", lang);
+}
+
+function scrambleText(el, finalText, duration) {
+	if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		el.textContent = finalText;
+		return;
+	}
+	const start = performance.now();
+	const len = finalText.length;
+	const lockTimes = Array.from({ length: len }, (_, i) =>
+		(i / len) * duration * 0.7 + Math.random() * duration * 0.3
+	);
+	const tick = (now) => {
+		const t = now - start;
+		let out = "";
+		for (let i = 0; i < len; i++) {
+			const ch = finalText[i];
+			if (ch === " " || ch === "\n" || t >= lockTimes[i]) out += ch;
+			else out += SCRAMBLE_GLYPHS[(Math.random() * SCRAMBLE_GLYPHS.length) | 0];
+		}
+		el.textContent = out;
+		if (t < duration) requestAnimationFrame(tick);
+		else el.textContent = finalText;
+	};
+	requestAnimationFrame(tick);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
-	const el = document.getElementById("dateLabel");
-	const now = new Date();
-	const months = [
-		"January", "February", "March", "April", "May", "June", "July",
-		"August", "September", "October", "November", "December"
-	];
-	el.textContent = `${months[now.getMonth()].toUpperCase()} ${now.getDate()}`;
+	const initialLang = localStorage.getItem("lang") === "ja" ? "ja" : "en";
+	applyLang(initialLang);
+
+	document.getElementById("langbtn")?.addEventListener("click", () => {
+		const next = document.body.classList.contains("lang-ja") ? "en" : "ja";
+		applyLang(next);
+	});
+
+	document.querySelectorAll(".name span, .block > h2").forEach((el, i) => {
+		const text = el.textContent;
+		setTimeout(() => scrambleText(el, text, SCRAMBLE_MS), i * 60);
+	});
+
+	// tweak
+	const SPRITE_URL    = "assets/photos/brain.png";
+	const SPRITE_FRAMES = 43;
+	const FRAME_W       = 571;
+	const FRAME_H       = 320;
+	const SCRUB_EASE    = 0.12;
+	const IDLE_SPIN     = 0.18;
+	const FRAME_OFFSET  = 21;
+
+	const heroImg = document.querySelector(".hero-photo img");
+	if (heroImg && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		const sprite = new Image();
+		sprite.onload = () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = FRAME_W;
+			canvas.height = FRAME_H;
+			canvas.className = heroImg.className;
+			heroImg.replaceWith(canvas);
+
+			const ctx = canvas.getContext("2d");
+			let target = FRAME_OFFSET, current = FRAME_OFFSET, mouseSeen = false, last = performance.now();
+
+			addEventListener("mousemove", (e) => {
+				mouseSeen = true;
+				const nx = Math.max(0, Math.min(1, e.clientX / innerWidth));
+				target = (nx * (SPRITE_FRAMES - 1) + FRAME_OFFSET) % SPRITE_FRAMES;
+			}, { passive: true });
+
+			const draw = (now) => {
+				const dt = Math.min((now - last) / 16.67, 3); last = now;
+				if (!mouseSeen) target = (target + IDLE_SPIN * dt) % SPRITE_FRAMES;
+				let diff = target - current;
+				if (diff > SPRITE_FRAMES / 2) diff -= SPRITE_FRAMES;
+				else if (diff < -SPRITE_FRAMES / 2) diff += SPRITE_FRAMES;
+				current = (current + diff * SCRUB_EASE + SPRITE_FRAMES) % SPRITE_FRAMES;
+				const idx = Math.floor(current) % SPRITE_FRAMES;
+				ctx.clearRect(0, 0, FRAME_W, FRAME_H);
+				ctx.drawImage(sprite, idx * FRAME_W, 0, FRAME_W, FRAME_H, 0, 0, FRAME_W, FRAME_H);
+				requestAnimationFrame(draw);
+			};
+			requestAnimationFrame(draw);
+		};
+		sprite.src = SPRITE_URL;
+	}
+
+	const coords = document.getElementById("coordsLabel");
+	if (coords) {
+		const pad = (n) => String(n | 0).padStart(4, "0");
+		addEventListener("mousemove", (e) => {
+			coords.textContent = `[ x:${pad(e.clientX)} y:${pad(e.clientY)} ]`;
+		}, { passive: true });
+	}
 
 	document.getElementById("homebtn").onclick = () => {
 		window.location.href = "/";
