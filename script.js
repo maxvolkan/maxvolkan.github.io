@@ -32,7 +32,7 @@ function applyLang(lang) {
 	});
 	renderDate(lang);
 	const btn = document.getElementById("langbtn");
-	if (btn) btn.textContent = lang === "ja" ? "[ 日 ]" : "[ EN ]";
+	if (btn) btn.textContent = lang === "ja" ? "[ 日本語 ]" : "[ EN ]";
 	localStorage.setItem("lang", lang);
 }
 
