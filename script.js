@@ -24,34 +24,88 @@ function renderDate(lang) {
 	else el.textContent = `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
 }
 
-function applyLang(lang) {
-	document.body.classList.toggle("lang-ja", lang === "ja");
-	document.querySelectorAll("[data-ja]").forEach(el => {
-		if (!el.dataset.en) el.dataset.en = el.textContent.trim();
-		el.textContent = lang === "ja" ? el.dataset.ja : el.dataset.en;
-	});
-	renderDate(lang);
-	const btn = document.getElementById("langbtn");
-	if (btn) btn.textContent = lang === "ja" ? "[ 日本語 ]" : "[ EN ]";
-	localStorage.setItem("lang", lang);
+const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta";
+
+function getRevealEls() {
+	return [...document.querySelectorAll(REVEAL_SELECTOR)]
+		.filter(el => el.children.length === 0 && el.textContent.trim().length > 0);
 }
 
-function scrambleText(el, finalText, duration) {
+function revealAll(updates = new Map(), stagger = 25) {
+	const list = getRevealEls();
+	updates.forEach((_, el) => { if (!list.includes(el)) list.push(el); });
+	list.forEach((el, i) => {
+		let text;
+		if (updates.has(el)) {
+			text = updates.get(el);
+			el._revealText = text;
+		} else {
+			if (el._revealText === undefined) el._revealText = el.textContent;
+			text = el._revealText;
+		}
+		scrambleText(el, text, SCRAMBLE_MS, i * stagger);
+	});
+	document.body.classList.add("revealed");
+}
+
+function applyLang(lang, animate = false) {
+	document.body.classList.toggle("lang-ja", lang === "ja");
+	const updates = new Map();
+	document.querySelectorAll("[data-ja]").forEach(el => {
+		if (!el.dataset.en) el.dataset.en = el.textContent.trim();
+		const newText = lang === "ja" ? el.dataset.ja : el.dataset.en;
+		if (animate) updates.set(el, newText);
+		else el.textContent = newText;
+	});
+	const dateEl = document.getElementById("dateLabel");
+	const now = new Date();
+	const dateText = lang === "ja"
+		? `${MONTHS_JA[now.getMonth()]} ${now.getDate()}日`
+		: `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
+	if (dateEl) {
+		if (animate) updates.set(dateEl, dateText);
+		else dateEl.textContent = dateText;
+	}
+	const btn = document.getElementById("langbtn");
+	const btnText = lang === "ja" ? "[ EN ]" : "[ JP ]";
+	if (btn) {
+		if (animate) updates.set(btn, btnText);
+		else btn.textContent = btnText;
+	}
+	localStorage.setItem("lang", lang);
+	if (animate) revealAll(updates);
+}
+
+function makeGlyphs(text) {
+	let out = "";
+	for (let i = 0; i < text.length; i++) {
+		const ch = text[i];
+		out += (ch === " " || ch === "\n") ? ch : SCRAMBLE_GLYPHS[(Math.random() * SCRAMBLE_GLYPHS.length) | 0];
+	}
+	return out;
+}
+
+function scrambleText(el, finalText, duration, startDelay = 0) {
 	if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
 		el.textContent = finalText;
 		return;
 	}
-	const start = performance.now();
+	const gen = (el._scrambleGen || 0) + 1;
+	el._scrambleGen = gen;
+	el.textContent = makeGlyphs(finalText);
+	const start = performance.now() + startDelay;
 	const len = finalText.length;
 	const lockTimes = Array.from({ length: len }, (_, i) =>
 		(i / len) * duration * 0.7 + Math.random() * duration * 0.3
 	);
 	const tick = (now) => {
+		if (el._scrambleGen !== gen) return;
 		const t = now - start;
 		let out = "";
 		for (let i = 0; i < len; i++) {
 			const ch = finalText[i];
-			if (ch === " " || ch === "\n" || t >= lockTimes[i]) out += ch;
+			if (ch === " " || ch === "\n") out += ch;
+			else if (t >= 0 && t >= lockTimes[i]) out += ch;
 			else out += SCRAMBLE_GLYPHS[(Math.random() * SCRAMBLE_GLYPHS.length) | 0];
 		}
 		el.textContent = out;
@@ -68,13 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	document.getElementById("langbtn")?.addEventListener("click", () => {
 		const next = document.body.classList.contains("lang-ja") ? "en" : "ja";
-		applyLang(next);
+		applyLang(next, true);
 	});
 
-	document.querySelectorAll(".name span, .block > h2").forEach((el, i) => {
-		const text = el.textContent;
-		setTimeout(() => scrambleText(el, text, SCRAMBLE_MS), i * 60);
-	});
 
 	// tweak
 	const SPRITE_URL    = "assets/photos/brain.png";
@@ -165,6 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		updateThemeIcon();
 	});
+
+	revealAll();
 });
 
 const savedTheme = localStorage.getItem("theme");

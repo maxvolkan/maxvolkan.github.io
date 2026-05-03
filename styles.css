@@ -91,6 +91,14 @@ body.dark {
 	font-size: 0.875rem;
 }
 
+.link-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
 .corner-btn,
 .corner-label {
   position: fixed;
@@ -196,19 +204,20 @@ body.dark {
   --hud-pad-x: 10px;
   --hud-rgb: var(--text-rgb);
   --hud-alpha: 0.45;
+  --hud-color: rgba(var(--hud-rgb), var(--hud-alpha));
 
   position: relative;
   display: inline-block;
   padding: var(--hud-pad-y) var(--hud-pad-x);
   background:
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top left    / var(--hud-len) var(--hud-thick) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top left    / var(--hud-thick) var(--hud-len) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top right   / var(--hud-len) var(--hud-thick) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) top right   / var(--hud-thick) var(--hud-len) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom left / var(--hud-len) var(--hud-thick) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom left / var(--hud-thick) var(--hud-len) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom right/ var(--hud-len) var(--hud-thick) no-repeat,
-    linear-gradient(rgba(var(--hud-rgb), var(--hud-alpha)), rgba(var(--hud-rgb), var(--hud-alpha))) bottom right/ var(--hud-thick) var(--hud-len) no-repeat;
+    linear-gradient(var(--hud-color), var(--hud-color)) left  0                top 0                    / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) left  0                top var(--hud-thick)     / var(--hud-thick) calc(var(--hud-len) - var(--hud-thick)) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) right 0                top 0                    / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) right 0                top var(--hud-thick)     / var(--hud-thick) calc(var(--hud-len) - var(--hud-thick)) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) left  0                bottom 0                 / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) left  0                bottom var(--hud-thick)  / var(--hud-thick) calc(var(--hud-len) - var(--hud-thick)) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) right 0                bottom 0                 / var(--hud-len) var(--hud-thick) no-repeat,
+    linear-gradient(var(--hud-color), var(--hud-color)) right 0                bottom var(--hud-thick)  / var(--hud-thick) calc(var(--hud-len) - var(--hud-thick)) no-repeat;
 }
 
 .brain-hud img,
@@ -499,16 +508,40 @@ body.dark .bottom-fade {
     opacity: 1;
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
+body:not(.revealed) .name,
+body:not(.revealed) h1,
+body:not(.revealed) h2,
+body:not(.revealed) h3,
+body:not(.revealed) h4,
+body:not(.revealed) p,
+body:not(.revealed) a,
+body:not(.revealed) .corner-btn,
+body:not(.revealed) .corner-label,
+body:not(.revealed) .mini-meta {
+  visibility: hidden;
+}
+
 @media (max-width: 800px) {
+  body {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
   .page {
-    padding: 16px;
-margin-top: 16px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-top: 72px;
     max-width: 100%;
   }
 
-	.monitor {
-		display: none;
-	}
+  .monitor {
+    display: none;
+  }
+
   .layout {
     display: block;
     margin-top: 12vh;
@@ -519,8 +552,10 @@ margin-top: 16px;
     width: 100%;
     max-width: none;
   }
-body {
-    font-size: 0.9rem;
+
+  .name {
+    font-size: 1.6rem;
+    word-break: break-word;
   }
 
   .title {
@@ -528,37 +563,57 @@ body {
     line-height: 1.15;
   }
 
-  h1 {
-    font-size: 1.8rem;
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.15rem; }
+  h3, h4 { font-size: 1rem; }
+
+  .hero-photo {
+    margin-bottom: 1.75rem;
   }
 
-  h2 {
-    font-size: 1.2rem;
-  }
-
-  h3, h4 {
-    font-size: 1rem;
-  }
-
-  .hero-photo img {
-    width: 100%;
+  .brain-hud img,
+  .brain-hud canvas {
     height: auto;
-    max-width: 100%;
-    padding: 0;
-    margin-bottom: 1.5rem;
-  }
-.corner-btn,
-  .corner-label {
-    font-size: 18px;
-    padding: 8px 10px;
+    width: 100%;
+    max-width: 260px;
   }
 
-  .top-left    { top: 12px; left: 12px; }
-  .top-right   { top: 12px; right: 12px; }
-  .bottom-left { bottom: 12px; left: 12px; }
-  .bottom-right{ bottom: 12px; right: 12px; }
-}
-  html, body {
-    overflow-x: hidden;
+  .link-item {
+    display: inline-block;
+    word-break: break-all;
+    font-size: 0.8rem;
   }
+
+  .subitem-list {
+    padding: 4px 8px;
+  }
+
+  .paper-meta {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .paper-title {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .block {
+    margin-top: 24px;
+  }
+
+  .corner-btn,
+  .corner-label {
+    font-size: 16px;
+    padding: 6px 8px;
+  }
+
+  .top-left    { top: 8px;  left: 8px; }
+  .top-right   { top: 8px;  right: 8px; }
+  .bottom-left { bottom: 8px; left: 8px; }
+  .bottom-right{ bottom: 8px; right: 8px; }
+
+  .coords { display: none; }
+
+  .bottom-fade { height: 60px; }
 }
