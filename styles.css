@@ -98,21 +98,6 @@ body.dark {
   opacity: 1;
 }
 
-.coords {
-  position: fixed;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  font-family: "Fira Mono", monospace;
-  font-size: 10px;
-  opacity: 0.12;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-  letter-spacing: 0.1em;
-}
-
 .top-left    { top: 20px; left: 20px; }
 .top-right   { top: 20px; right: 20px; }
 .bottom-left { bottom: 20px; left: 20px; }
@@ -419,8 +404,6 @@ body:not(.revealed) .icon-label {
   .bottom-left { bottom: 8px; left: 8px; }
   .bottom-right{ bottom: 8px; right: 8px; }
 
-  .coords { display: none; }
-
 }
 
 /* ───────── dithered background (bg.js) ───────── */
@@ -430,7 +413,7 @@ body:not(.revealed) .icon-label {
   inset: 0;
   width: 100vw;
   height: 100lvh;
-  z-index: -1;
+  z-index: -20;  /* under glyphs.js's glyph field (-10) */
   image-rendering: pixelated;
   opacity: 0;
   transition: opacity 1s ease;
@@ -460,6 +443,10 @@ body:not(.revealed) .icon-label {
 .role {
   margin: 4px 0 8px;
   color: var(--text-muted);
+}
+
+#title .paper-links {
+  margin-top: 6px;
 }
 
 .icon {
@@ -575,25 +562,31 @@ body:not(.revealed) .icon-label {
 }
 
 /* ───────── custom cursor ───────── */
-/* A glyph that follows the mouse (script.js); it swaps glyph over anything clickable using :has().
+/* A pixel-art cell (assets/cursor.svg: 4 frames of 15px, idle idle firing firing) follows the mouse with
+   a tail of dots (script.js). Over anything clickable the cell fires and a pulse runs down the tail.
+   The sprite is a mask, so it takes the theme's text colour; redraw it (or use a PNG with alpha) to restyle.
    The real cursor is only hidden once this one is on, so a script failure never leaves you without one. */
 html:has(#cursor.on) *,
 html:has(#cursor.on) *:hover {
   cursor: none;
 }
 
-#cursor {
+#cursor,
+#trail i {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1000;
   pointer-events: none;
-  opacity: 0;
+}
+
+#cursor {
+  z-index: 1001;
+  width: 30px;
+  height: 30px;
   translate: -50% -50%;
-  font-size: 24px;
-  line-height: 1;
-  color: var(--text);
-  text-shadow: 0 0 2px var(--bg), 0 0 12px rgba(var(--text-rgb), 0.6);
+  opacity: 0;
+  filter: drop-shadow(0 0 1px var(--bg)) drop-shadow(0 0 6px rgba(var(--text-rgb), 0.6));
 }
 
 #cursor.on {
@@ -601,27 +594,57 @@ html:has(#cursor.on) *:hover {
 }
 
 #cursor::before {
-  content: '❖';
+  content: '';
   display: block;
-  animation: spin 3s linear infinite;
+  height: 100%;
+  background: var(--text);
+  -webkit-mask: url(assets/cursor.svg) 0 0 / 120px 30px;
+  mask: url(assets/cursor.svg) 0 0 / 120px 30px;
+  animation: idle 1.2s steps(1) infinite;
+}
+
+/* the tail: whole-pixel squares, fainter and smaller toward the end */
+#trail i {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: var(--text);
+  opacity: calc(0.6 - var(--k) * 0.07);
+  scale: calc(1 - var(--k) * 0.08);
+}
+
+html:not(:has(#cursor.on)) #trail {
+  display: none;
 }
 
 html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #cursor::before {
-  content: '✦';
-  scale: 1.5;
-  animation-duration: 0.6s;
+  animation: fire 0.24s steps(1) infinite;
 }
 
-@keyframes spin {
-  to { rotate: 360deg; }
+html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #trail i {
+  animation: pulse 0.5s calc(var(--k) * 40ms) infinite;
+}
+
+@keyframes idle {
+  50% { mask-position: -30px 0; }
+}
+
+@keyframes fire {
+  0%  { mask-position: -60px 0; }
+  50% { mask-position: -90px 0; }
+}
+
+@keyframes pulse {
+  20% { opacity: 1; scale: 1.5; }
 }
 
 @media (hover: none) {
-  #cursor { display: none; }
+  #cursor, #trail { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   #cursor::before, .icon, .window { animation: none; }
+  #trail { display: none; }
 }
 
 /* ───────── tweak panel (?tweak) ───────── */

@@ -17,7 +17,6 @@
         <button class="corner-btn top-left" id="homebtn">[ * ]</button>
         <div class="corner-label top-right" id="dateLabel"></div>
         <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
-        <div class="corner-label coords" id="coordsLabel">[ x:0000 y:0000 ]</div>
         <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
 
         <!-- Desktop: folders sit at --x/--y; hover, tab or tap one to open its panel.
@@ -25,8 +24,9 @@
         <main id="desktop">
                 <header id="title">
                         <h1 class="name"><span>Maxwell Volkan</span></h1>
-                        <p class="role" data-ja="Kotani &amp; Shimba 研究室 · 東京大学">Kotani &amp; Shimba Lab · The University of Tokyo</p>
+                        <p class="role" data-ja="小谷榛葉研究室 · 東京大学">Kotani &amp; Shimba Lab · The University of Tokyo</p>
                         <a href="mailto:maxwell@neuron.t.u-tokyo.ac.jp">maxwell@neuron.t.u-tokyo.ac.jp</a>
+                        <div class="paper-links"><a href="https://github.com/maxvolkan" target="_blank">[github]</a></div>
                 </header>
 
                 <div class="icon" tabindex="0" style="--x:20%;--y:28%;--i:0">
@@ -87,7 +87,7 @@
                         <div class="panel"><div class="window hud">
                                 <h2 data-ja="所属">Affiliations</h2>
                                 <div class="subitem-list">
-                                        <p class="degree"><a href="https://neuron.t.u-tokyo.ac.jp/" target="_blank">Kotani &amp; Shimba Laboratory</a></p>
+                                        <p class="degree"><a href="https://neuron.t.u-tokyo.ac.jp/" target="_blank" data-ja="小谷榛葉研究室">Kotani &amp; Shimba Laboratory</a></p>
                                         <p class="university" data-ja="東京大学(在籍中)">The University of Tokyo (Ongoing)</p>
                                         <p data-ja="Fulbright フェロー (日本, 2024-2025)">Fulbright Fellow (Japan, 2024-2025)</p>
                                         <p class="university" data-ja="東京大学 (2025)">The University of Tokyo (2025)</p>
@@ -144,12 +144,16 @@
                 <form>
                         <label>style    <select name="style"><option>giant</option><option>photo</option></select></label>
                         <label>size     <input type="range" name="size"     min="0.3" max="3"  step="0.05"><output></output></label>
+                        <label>x        <input type="range" name="x"        min="0"   max="1.5" step="0.01"><output></output></label>
+                        <label>y        <input type="range" name="y"        min="-0.5" max="1.5" step="0.01"><output></output></label>
                         <label>opacity  <input type="range" name="opacity"  min="0"   max="1"  step="0.05"><output></output></label>
                         <label>spin     <input type="range" name="spin"     min="0"   max="20" step="0.5"><output></output></label>
                         <label>levels   <input type="range" name="levels"   min="2"   max="6"  step="1"><output></output></label>
                         <label>pixel    <input type="range" name="px"       min="1"   max="6"  step="1"><output></output></label>
                         <label>parallax <input type="range" name="strength" min="0"   max="3"  step="0.1"><output></output></label>
                         <label>wiggle   <input type="range" name="wiggle"   min="0"   max="5"  step="0.1"><output></output></label>
+                        <label>crisp    <input type="checkbox" name="crisp"></label>
+                        <label>blend    <input type="checkbox" name="blend"></label>
                         <label>photo    <input type="checkbox" name="photo"></label>
                 </form>
         </details>
@@ -157,6 +161,7 @@
         <div id="cursor"></div>
 
         <script src="script.js"></script>
+        <script src="glyphs.js"></script>
         <script type="module" src="bg.js"></script>
 </body>
 

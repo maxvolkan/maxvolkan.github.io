@@ -3,11 +3,13 @@
 // in the page theme's two colours. Ported from the beanlette_site PoC.
 
 // ───────── looks ─────────
-// size = brain height in screen heights, opacity = how much ink the brain lays down, spin = frames/s,
-// levels = tones after dithering, px = canvas pixel size, strength = mouse parallax, photo = photo behind.
+// size = brain height in screen heights, x/y = brain centre (0..1 of the screen, past 1 = cut off),
+// opacity = how much ink the brain lays down, spin = frames/s, levels = tones after dithering,
+// px = canvas pixel size, strength = mouse parallax, crisp = keep the sprite's own chunky pixels
+// (off = smooth), blend = crossfade between frames (off = steps frame to frame), photo = photo behind.
 const STYLES = {
-  giant: { size: 1.1, opacity: 0.6, spin: 3, levels: 3, px: 2, strength: 1, wiggle: 1, photo: false },
-  photo: { size: 1.1, opacity: 0,   spin: 3, levels: 3, px: 2, strength: 1, wiggle: 1, photo: true },
+  giant: { size: 1, x: 0.98, y: 0.5, opacity: 0.6, spin: 6, levels: 2, px: 3, strength: 1, wiggle: 1, crisp: true, blend: false, photo: false },
+  photo: { size: 1, x: 0.98, y: 0.5, opacity: 0,   spin: 6, levels: 3, px: 2, strength: 1, wiggle: 1, crisp: true, blend: false, photo: true },
 };
 // Turntable strip: `frames` frames of w×h side by side. black = the render's background grey (0..1),
 // counted as "no brain"; a render with transparency can use 0.
@@ -41,7 +43,7 @@ const FRAG = `#version 300 es
   uniform float u_time;             // seconds
   uniform float u_frame;            // brain frame; the fraction blends into the next one
   uniform float u_frames, u_aspect, u_black;  // brain strip: frame count, frame w/h, background grey
-  uniform float u_size, u_opacity, u_photo, u_levels, u_strength, u_wiggle;
+  uniform float u_size, u_x, u_y, u_opacity, u_photo, u_levels, u_strength, u_wiggle, u_crisp, u_blend;
   uniform float u_base;             // brightness of the bare page: 1 on cream, 0 on dark
   uniform vec3  u_dark, u_light;    // the theme's two colours
 
@@ -77,6 +79,15 @@ const FRAG = `#version 300 es
 
   float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 
+  // crisp = nearest texel (the sprite's own chunky pixels), otherwise smooth bilinear
+  vec4 brainAt(vec2 b, float layer) {
+    if (u_crisp > 0.5) {
+      ivec2 size = textureSize(u_brain, 0).xy;
+      return texelFetch(u_brain, ivec3(clamp(ivec2(b * vec2(size)), ivec2(0), size - 1), int(layer)), 0);
+    }
+    return texture(u_brain, vec3(b, layer));
+  }
+
   void main() {
     vec2 m = u_mouse * 2.0 - 1.0;  // -1..1 from centre
     vec2 drift = u_wiggle * vec2(sin(u_time * 0.5 * PI) * cos(u_time * 0.6) * 0.0075,
@@ -88,14 +99,18 @@ const FRAG = `#version 300 es
     float photo = luma(texture(u_color, uv + offset * texture(u_depth, uv).g).rgb);
     float v = mix(u_base, photo, u_photo);
 
-    // brain: a screen-centred box u_size screens tall, nudged against the mouse like a near layer
+    // brain: a box u_size screens tall centred at (u_x, u_y), nudged against the mouse like a near layer
     vec2 box = vec2(u_aspect, 1.0) * u_size * u_resolution.y;
-    vec2 centre = u_resolution * (0.5 - (m * 0.03 + drift) * u_strength);
+    vec2 centre = u_resolution * (vec2(u_x, 1.0 - u_y) - (m * 0.03 + drift) * u_strength);
     vec2 b = (v_uv * u_resolution - centre) / box + 0.5;
     if (b == clamp(b, 0.0, 1.0)) {
       b.y = 1.0 - b.y;  // frames are uploaded top row first
+      // depth parallax like the photo's: nearer parts shift more, so mouse up/down tilts it (left/right spins it)
+      // ponytail: a dome fitted to the brain's outline stands in for depth; a Blender Mist/Z strip gives real per-fold depth
+      vec2 q = (b - vec2(0.5, 0.52)) / vec2(0.37, 0.46);
+      b += sqrt(max(1.0 - dot(q, q), 0.0)) * u_strength * mix(m * 0.05, m * 0.25, u_turbo) * vec2(1.0, -1.0);
       float i = floor(u_frame);
-      vec4 c = mix(texture(u_brain, vec3(b, i)), texture(u_brain, vec3(b, mod(i + 1.0, u_frames))), u_frame - i);
+      vec4 c = mix(brainAt(b, i), brainAt(b, mod(i + 1.0, u_frames)), (u_frame - i) * u_blend);
       float ink = clamp((luma(c.rgb) - u_black) / (1.0 - u_black), 0.0, 1.0) * c.a;
       v = mix(v, 1.0 - u_base, ink * u_opacity);  // brighter brain = more ink (light dots on dark, dark on cream)
     }
@@ -251,6 +266,10 @@ async function main() {
     gl.uniform1f(u.u_time, (now - t0) / 1000);
     gl.uniform1f(u.u_frame, brainFrame);
     gl.uniform1f(u.u_size, +f.size.value);
+    gl.uniform1f(u.u_x, +f.x.value);
+    gl.uniform1f(u.u_y, +f.y.value);
+    gl.uniform1f(u.u_crisp, f.crisp.checked ? 1 : 0);
+    gl.uniform1f(u.u_blend, f.blend.checked ? 1 : 0);
     gl.uniform1f(u.u_opacity, +f.opacity.value);
     gl.uniform1f(u.u_photo, f.photo.checked ? 1 : 0);
     gl.uniform1f(u.u_levels, +f.levels.value);
