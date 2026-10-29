@@ -19,8 +19,8 @@
         <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
         <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
 
-        <!-- Desktop: folders sit at --x/--y; hover, tab or tap one to open its panel.
-             .flip opens the panel to the left, .up opens it upward. -->
+        <!-- Desktop: folders sit at --x/--y; hover, tab or tap one to open its panel (.up opens it upward).
+             --d = parallax depth, how far it drifts against the mouse. -->
         <main id="desktop">
                 <header id="title">
                         <h1 class="name"><span>Maxwell Volkan</span></h1>
@@ -29,7 +29,7 @@
                         <div class="paper-links"><a href="https://github.com/maxvolkan" target="_blank">[github]</a></div>
                 </header>
 
-                <div class="icon" tabindex="0" style="--x:20%;--y:28%;--i:0">
+                <div class="icon" tabindex="0" style="--x:8%;--y:20%;--i:0;--d:0.7">
                         <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
                         <span class="icon-label" data-ja="研究/">research/</span>
                         <div class="panel"><div class="window hud">
@@ -67,7 +67,7 @@
                         </div></div>
                 </div>
 
-                <div class="icon flip" tabindex="0" style="--x:80%;--y:26%;--i:1">
+                <div class="icon" tabindex="0" style="--x:8%;--y:38%;--i:1;--d:1.1">
                         <canvas width="24" height="24" data-src="assets/games/autogrotto/autogrotto_mine.webp"></canvas>
                         <span class="icon-label" data-ja="プロジェクト/">projects/</span>
                         <div class="panel"><div class="window hud">
@@ -81,7 +81,7 @@
                         </div></div>
                 </div>
 
-                <div class="icon up" tabindex="0" style="--x:18%;--y:74%;--i:2">
+                <div class="icon up" tabindex="0" style="--x:8%;--y:62%;--i:2;--d:0.85">
                         <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
                         <span class="icon-label" data-ja="経歴/">cv/</span>
                         <div class="panel"><div class="window hud">
@@ -109,7 +109,7 @@
                         </div></div>
                 </div>
 
-                <div class="icon flip up" tabindex="0" style="--x:82%;--y:72%;--i:3">
+                <div class="icon up" tabindex="0" style="--x:8%;--y:80%;--i:3;--d:1.25">
                         <canvas width="24" height="24" data-src="assets/games/neurobeat/bio_signals.webp"></canvas>
                         <span class="icon-label" data-ja="自己紹介.txt">bio.txt</span>
                         <div class="panel"><div class="window hud">

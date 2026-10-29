@@ -75,6 +75,7 @@ void main(){
   const VERT = "attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}";
 
   const canvas = document.createElement("canvas");
+  canvas.id = "glyphs";
   canvas.setAttribute("aria-hidden", "true");
   Object.assign(canvas.style, {
     position: "fixed", inset: "0", width: "100%", height: "100%",

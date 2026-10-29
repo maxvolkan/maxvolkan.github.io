@@ -423,19 +423,23 @@ body:not(.revealed) .icon-label {
   opacity: 1;
 }
 
-/* ───────── desktop: folder icons around the title ───────── */
-/* bg.js sets --mx/--my (mouse, -0.5..0.5) for a small parallax drift; the title drifts more. */
+/* ───────── desktop: a column of folder icons, the title in the middle ───────── */
+/* Parallax: bg.js sets --mx/--my on <html> (mouse, -0.5..0.5, eased) and each layer moves against the
+   mouse by its own amount: glyph field a little (far), icons by their --d, the title the most (near). */
 #desktop {
   position: fixed;
   inset: 0;
-  translate: calc(var(--mx, 0) * -12px) calc(var(--my, 0) * -12px);
+}
+
+#glyphs {
+  translate: calc(var(--mx, 0) * -20px) calc(var(--my, 0) * -20px);
 }
 
 #title {
   position: absolute;
   top: 50%;
   left: 50%;
-  translate: calc(-50% + var(--mx, 0) * -16px) calc(-50% + var(--my, 0) * -16px);
+  translate: calc(-50% + var(--mx, 0) * -100px) calc(-50% + var(--my, 0) * -100px);
   text-align: center;
   text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg);
 }
@@ -453,7 +457,7 @@ body:not(.revealed) .icon-label {
   position: absolute;
   left: var(--x);
   top: var(--y);
-  translate: -50% -50%;
+  translate: calc(-50% + var(--mx, 0) * var(--d, 1) * -40px) calc(-50% + var(--my, 0) * var(--d, 1) * -40px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -497,12 +501,6 @@ body:not(.revealed) .icon-label {
   left: 100%;
   padding-left: 12px;
   width: min(420px, 45vw);
-}
-
-.icon.flip .panel {
-  left: auto;
-  right: 100%;
-  padding: 0 12px 0 0;
 }
 
 .icon.up .panel {
@@ -562,89 +560,45 @@ body:not(.revealed) .icon-label {
 }
 
 /* ───────── custom cursor ───────── */
-/* A pixel-art cell (assets/cursor.svg: 4 frames of 15px, idle idle firing firing) follows the mouse with
-   a tail of dots (script.js). Over anything clickable the cell fires and a pulse runs down the tail.
-   The sprite is a mask, so it takes the theme's text colour; redraw it (or use a PNG with alpha) to restyle.
+/* A small pixel corner bracket with its tip on the mouse (script.js moves it). Over anything clickable
+   it grows and gets an inner line. Built from borders and an inset shadow, so it follows the theme.
    The real cursor is only hidden once this one is on, so a script failure never leaves you without one. */
 html:has(#cursor.on) *,
 html:has(#cursor.on) *:hover {
   cursor: none;
 }
 
-#cursor,
-#trail i {
+#cursor {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1000;
   pointer-events: none;
-}
-
-#cursor {
-  z-index: 1001;
-  width: 30px;
-  height: 30px;
-  translate: -50% -50%;
   opacity: 0;
-  filter: drop-shadow(0 0 1px var(--bg)) drop-shadow(0 0 6px rgba(var(--text-rgb), 0.6));
+  width: 12px;
+  height: 12px;
+  border: solid var(--text);
+  border-width: 2px 0 0 2px;
+  filter: drop-shadow(0 0 1px var(--bg));
+  transition: width 0.2s, height 0.2s, box-shadow 0.2s;
 }
 
 #cursor.on {
   opacity: 1;
 }
 
-#cursor::before {
-  content: '';
-  display: block;
-  height: 100%;
-  background: var(--text);
-  -webkit-mask: url(assets/cursor.svg) 0 0 / 120px 30px;
-  mask: url(assets/cursor.svg) 0 0 / 120px 30px;
-  animation: idle 1.2s steps(1) infinite;
-}
-
-/* the tail: whole-pixel squares, fainter and smaller toward the end */
-#trail i {
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
-  background: var(--text);
-  opacity: calc(0.6 - var(--k) * 0.07);
-  scale: calc(1 - var(--k) * 0.08);
-}
-
-html:not(:has(#cursor.on)) #trail {
-  display: none;
-}
-
-html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #cursor::before {
-  animation: fire 0.24s steps(1) infinite;
-}
-
-html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #trail i {
-  animation: pulse 0.5s calc(var(--k) * 40ms) infinite;
-}
-
-@keyframes idle {
-  50% { mask-position: -30px 0; }
-}
-
-@keyframes fire {
-  0%  { mask-position: -60px 0; }
-  50% { mask-position: -90px 0; }
-}
-
-@keyframes pulse {
-  20% { opacity: 1; scale: 1.5; }
+html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #cursor {
+  width: 16px;
+  height: 16px;
+  box-shadow: inset 2px 2px 0 var(--bg), inset 3px 3px 0 var(--text);
 }
 
 @media (hover: none) {
-  #cursor, #trail { display: none; }
+  #cursor { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cursor::before, .icon, .window { animation: none; }
-  #trail { display: none; }
+  .icon, .window { animation: none; }
 }
 
 /* ───────── tweak panel (?tweak) ───────── */
@@ -702,8 +656,7 @@ html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .proje
     height: 48px;
   }
 
-  .icon .panel,
-  .icon.flip .panel {
+  .icon .panel {
     position: static;
     width: auto;
     padding: 8px 0 0;

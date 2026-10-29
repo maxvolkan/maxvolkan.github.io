@@ -126,31 +126,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 
-	// custom cursor: a pixel cell that follows the mouse, trailing a tail of dots that each chase the one
-	// ahead (styles.css animates the cell and sends a pulse down the tail over clickable things)
+	// custom cursor: a corner bracket whose tip sits on the mouse (styles.css changes it over clickable
+	// things); a touch turns it off so it never hangs around on phones
 	const cursor = document.getElementById("cursor");
 	if (cursor) {
-		const TAIL = 8;
-		cursor.insertAdjacentHTML("afterend", `<div id="trail">${Array.from({ length: TAIL }, (_, k) => `<i style="--k:${k}"></i>`).join("")}</div>`);
-		const dots = [...document.querySelectorAll("#trail i")].map(el => ({ el, x: -99, y: -99 }));
-		let mx = -99, my = -99;
+		let touched = false;  // taps fire fake mousemoves too, so once touched it stays off
 		addEventListener("mousemove", (e) => {
-			mx = e.clientX; my = e.clientY;
-			cursor.style.left = mx + "px";
-			cursor.style.top = my + "px";
+			if (touched) return;
+			cursor.style.left = e.clientX + "px";
+			cursor.style.top = e.clientY + "px";
 			cursor.classList.add("on");
 		}, { passive: true });
-		const follow = () => {
-			let x = mx, y = my;
-			for (const d of dots) {
-				d.x += (x - d.x) * 0.35;
-				d.y += (y - d.y) * 0.35;
-				d.el.style.translate = `${Math.round(d.x)}px ${Math.round(d.y)}px`;  // whole pixels keep it crisp
-				x = d.x; y = d.y;
-			}
-			requestAnimationFrame(follow);
-		};
-		requestAnimationFrame(follow);
+		addEventListener("touchstart", () => { touched = true; cursor.classList.remove("on"); }, { passive: true });
 	}
 
 	// desktop icon thumbnails: a random crop of data-src drawn into a 24px canvas, CSS blows it up pixelated

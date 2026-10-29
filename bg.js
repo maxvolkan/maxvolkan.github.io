@@ -1,20 +1,20 @@
-// Background: one WebGL2 full-screen pass. A slowly spinning brain (a strip of turntable frames)
+// Background: one WebGL2 full-screen pass. A spinning brain (a sheet of turntable frames)
 // over an optional depth-parallax photo, mixed into one brightness, Bayer-dithered, then drawn
 // in the page theme's two colours. Ported from the beanlette_site PoC.
 
 // ───────── looks ─────────
 // size = brain height in screen heights, x/y = brain centre (0..1 of the screen, past 1 = cut off),
 // opacity = how much ink the brain lays down, spin = frames/s, levels = tones after dithering,
-// px = canvas pixel size, strength = mouse parallax, crisp = keep the sprite's own chunky pixels
-// (off = smooth), blend = crossfade between frames (off = steps frame to frame), photo = photo behind.
+// px = canvas pixel size, strength/wiggle = the photo's mouse parallax and idle drift (the brain ignores the
+// mouse, it only spins), crisp = nearest-pixel brain (off = smooth), blend = crossfade between frames
+// (off = steps frame to frame), photo = photo behind.
 const STYLES = {
-  giant: { size: 1, x: 0.98, y: 0.5, opacity: 0.6, spin: 6, levels: 2, px: 3, strength: 1, wiggle: 1, crisp: true, blend: false, photo: false },
-  photo: { size: 1, x: 0.98, y: 0.5, opacity: 0,   spin: 6, levels: 3, px: 2, strength: 1, wiggle: 1, crisp: true, blend: false, photo: true },
+  giant: { size: 0.9, x: 0.9, y: 0.5, opacity: 0.6, spin: 8, levels: 2, px: 2, strength: 1, wiggle: 1, crisp: false, blend: false, photo: false },
+  photo: { size: 0.9, x: 0.9, y: 0.5, opacity: 0,   spin: 8, levels: 3, px: 2, strength: 1, wiggle: 1, crisp: false, blend: false, photo: true },
 };
-// Turntable strip: `frames` frames of w×h side by side. black = the render's background grey (0..1),
-// counted as "no brain"; a render with transparency can use 0.
-const BRAIN = { src: 'assets/photos/brain.png', frames: 43, w: 571, h: 320, black: 0.09, start: 21 };
-const NUDGE = 0.25;  // mouse from left to right edge turns the brain this many full turns
+// Turntable sheet from tools/render-brain.py: `frames` frames of w×h in rows of `cols`.
+// black = the render's background brightness (0..1), counted as "no brain".
+const BRAIN = { src: 'assets/brain/brain.jpg', frames: 64, cols: 8, w: 448, h: 336, black: 0, start: 0 };
 // ponytail: placeholder photo for local testing only, swap for your own before shipping (no credit needed then)
 // Salk Institute by Carol M. Highsmith, public domain, via Wikimedia Commons
 const SCENE = 'scenes/brutal';
@@ -42,7 +42,7 @@ const FRAG = `#version 300 es
   uniform float u_scroll;           // 0..1 page scroll
   uniform float u_time;             // seconds
   uniform float u_frame;            // brain frame; the fraction blends into the next one
-  uniform float u_frames, u_aspect, u_black;  // brain strip: frame count, frame w/h, background grey
+  uniform float u_frames, u_aspect, u_black;  // brain sheet: frame count, frame w/h, background brightness
   uniform float u_size, u_x, u_y, u_opacity, u_photo, u_levels, u_strength, u_wiggle, u_crisp, u_blend;
   uniform float u_base;             // brightness of the bare page: 1 on cream, 0 on dark
   uniform vec3  u_dark, u_light;    // the theme's two colours
@@ -99,16 +99,11 @@ const FRAG = `#version 300 es
     float photo = luma(texture(u_color, uv + offset * texture(u_depth, uv).g).rgb);
     float v = mix(u_base, photo, u_photo);
 
-    // brain: a box u_size screens tall centred at (u_x, u_y), nudged against the mouse like a near layer
-    vec2 box = vec2(u_aspect, 1.0) * u_size * u_resolution.y;
-    vec2 centre = u_resolution * (vec2(u_x, 1.0 - u_y) - (m * 0.03 + drift) * u_strength);
-    vec2 b = (v_uv * u_resolution - centre) / box + 0.5;
+    // brain: a box u_size screens tall (screen widths on portrait phones) centred at (u_x, u_y); it ignores the mouse and just spins
+    vec2 box = vec2(u_aspect, 1.0) * u_size * min(u_resolution.x, u_resolution.y);
+    vec2 b = (v_uv - vec2(u_x, 1.0 - u_y)) * u_resolution / box + 0.5;
     if (b == clamp(b, 0.0, 1.0)) {
       b.y = 1.0 - b.y;  // frames are uploaded top row first
-      // depth parallax like the photo's: nearer parts shift more, so mouse up/down tilts it (left/right spins it)
-      // ponytail: a dome fitted to the brain's outline stands in for depth; a Blender Mist/Z strip gives real per-fold depth
-      vec2 q = (b - vec2(0.5, 0.52)) / vec2(0.37, 0.46);
-      b += sqrt(max(1.0 - dot(q, q), 0.0)) * u_strength * mix(m * 0.05, m * 0.25, u_turbo) * vec2(1.0, -1.0);
       float i = floor(u_frame);
       vec4 c = mix(brainAt(b, i), brainAt(b, mod(i + 1.0, u_frames)), (u_frame - i) * u_blend);
       float ink = clamp((luma(c.rgb) - u_black) / (1.0 - u_black), 0.0, 1.0) * c.a;
@@ -171,7 +166,7 @@ addEventListener('deviceorientation', (e) => {
   target.x = (clamp(e.gamma, -45, 45) + 45) / 90;
   target.y = (clamp(e.beta, -45, 45) + 45) / 90;
 });
-// Hold the mouse button for 150ms → turbo: the photo warps and the brain spins fast
+// Hold the mouse button for 150ms → turbo: the photo warps
 addEventListener('mousedown', (e) => { if (!e.target.closest('#tweak')) held = setTimeout(() => turboTarget = 1, 150); });
 addEventListener('mouseup', () => { clearTimeout(held); turboTarget = 0; });
 const onScroll = () => scrollTarget = clamp(scrollY / Math.max(1, document.body.clientHeight - innerHeight));
@@ -206,7 +201,7 @@ async function main() {
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   };
 
-  const [color, depth, strip] = await Promise.all([load(SCENE + '_color.jpg'), load(SCENE + '_depth.png'), load(BRAIN.src)]);
+  const [color, depth, sheet] = await Promise.all([load(SCENE + '_color.jpg'), load(SCENE + '_depth.png'), load(BRAIN.src)]);
 
   // Photo + depth. NEAREST keeps the crunchy look; flip Y because GL's origin is bottom-left.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -218,9 +213,9 @@ async function main() {
   });
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
-  // Brain: the strip is far wider than a GPU texture may be, so each frame goes through a small
-  // canvas into its own layer of a texture array. LINEAR smooths it when it's blown up giant.
-  // ponytail: RGBA layers cost frames×w×h×4 bytes of GPU memory (~31MB now); fewer/smaller frames if phones struggle
+  // Brain: each frame of the sheet goes through a small canvas into its own layer of a texture array,
+  // so frames never bleed into each other. LINEAR smooths it when it's blown up giant.
+  // ponytail: RGBA layers cost frames×w×h×4 bytes of GPU memory (~38MB now); fewer/smaller frames if phones struggle
   gl.activeTexture(gl.TEXTURE2);
   gl.bindTexture(gl.TEXTURE_2D_ARRAY, gl.createTexture());
   setFilter(gl.TEXTURE_2D_ARRAY, gl.LINEAR);
@@ -228,7 +223,7 @@ async function main() {
   const slice = Object.assign(document.createElement('canvas'), { width: BRAIN.w, height: BRAIN.h }).getContext('2d');
   for (let i = 0; i < BRAIN.frames; i++) {
     slice.clearRect(0, 0, BRAIN.w, BRAIN.h);
-    slice.drawImage(strip, i * BRAIN.w, 0, BRAIN.w, BRAIN.h, 0, 0, BRAIN.w, BRAIN.h);
+    slice.drawImage(sheet, (i % BRAIN.cols) * BRAIN.w, Math.floor(i / BRAIN.cols) * BRAIN.h, BRAIN.w, BRAIN.h, 0, 0, BRAIN.w, BRAIN.h);
     gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, BRAIN.w, BRAIN.h, 1, gl.RGBA, gl.UNSIGNED_BYTE, slice.canvas);
   }
   gl.uniform1i(u.u_color, 0);
@@ -239,7 +234,6 @@ async function main() {
   gl.uniform1f(u.u_black, BRAIN.black);
 
   const hoverless = matchMedia('(hover: none)');
-  const desktop = $('#desktop');
   const t0 = performance.now();
   let last = t0, spin = BRAIN.start;
   function frame(now) {
@@ -252,8 +246,7 @@ async function main() {
     mouse.y = damp(mouse.y, target.y, 6, dt);
     scroll = damp(scroll, scrollTarget, 3, dt);
     turbo = damp(turbo, turboTarget, 3, dt);
-    spin += dt * (+f.spin.value + turbo * 30);
-    const n = BRAIN.frames, brainFrame = ((spin + mouse.x * n * NUDGE) % n + n) % n;
+    spin = (spin + dt * +f.spin.value) % BRAIN.frames;
 
     // canvas pixels = CSS pixels / pixel size (ignores devicePixelRatio on purpose: chunkier dither)
     const px = +f.px.value, w = Math.round(canvas.clientWidth / px), h = Math.round(canvas.clientHeight / px);
@@ -264,7 +257,7 @@ async function main() {
     gl.uniform1f(u.u_turbo, turbo);
     gl.uniform1f(u.u_scroll, scroll);
     gl.uniform1f(u.u_time, (now - t0) / 1000);
-    gl.uniform1f(u.u_frame, brainFrame);
+    gl.uniform1f(u.u_frame, spin);
     gl.uniform1f(u.u_size, +f.size.value);
     gl.uniform1f(u.u_x, +f.x.value);
     gl.uniform1f(u.u_y, +f.y.value);
@@ -280,10 +273,10 @@ async function main() {
     gl.uniform3fv(u.u_light, theme.light);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // DOM parallax: styles.css drifts the desktop and title against the mouse using these
+    // DOM parallax: styles.css moves the title, icons and glyph field against the mouse by different amounts
     if (!hoverless.matches) {
-      desktop.style.setProperty('--mx', mouse.x - 0.5);
-      desktop.style.setProperty('--my', mouse.y - 0.5);
+      document.documentElement.style.setProperty('--mx', mouse.x - 0.5);
+      document.documentElement.style.setProperty('--my', mouse.y - 0.5);
     }
   }
   requestAnimationFrame(frame);
