@@ -1,2 +1,4 @@
 .env
 node_modules/
+tools/.secrets.json
+tools/out/

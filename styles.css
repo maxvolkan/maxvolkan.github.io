@@ -401,9 +401,13 @@ body:not(.revealed) .icon-meta {
   list-style: none;
 }
 
+#news li:nth-child(n+4) {
+  display: none;  /* newest three (journal posts are added at the top by tools/publish.mjs) */
+}
+
 #news li {
   display: grid;
-  grid-template-columns: 3.5em 1fr;
+  grid-template-columns: 4.5em 1fr;
   margin-top: 8px;
   font-size: 14px;
 }
@@ -727,6 +731,26 @@ html:has(a:hover, button:hover, summary:hover, input:hover, select:hover) #curso
 }
 
 
+/* laptop-height screens: tighten the column so it clears the corner buttons */
+@media (max-height: 860px) {
+  #desktop {
+    gap: 24px;
+    padding-block: 64px;
+  }
+
+  .name {
+    font-size: 32px;
+  }
+
+  .folders {
+    gap: 0;
+  }
+
+  #news li:nth-child(n+3) {
+    display: none;
+  }
+}
+
 /* ───────── phones and short screens: the column scrolls, folders open inline ───────── */
 @media (max-width: 600px), (max-height: 640px) {
   .name {
@@ -768,4 +792,169 @@ html:has(a:hover, button:hover, summary:hover, input:hover, select:hover) #curso
    fixed canvases. That was the black bar at the top. */
 body:has(#desktop) {
   padding: 0;
+}
+
+/* ───────── journal (pages built by tools/publish.mjs) ───────── */
+/* links styled as tiles skip the sliding underline */
+.icon::after,
+.zine-card::after {
+  display: none;
+}
+
+.post,
+.journal-index {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 96px var(--gutter) 120px;
+}
+
+/* zine header: the dithered cover with the title set huge across its bottom edge */
+.zine {
+  position: relative;
+  margin-bottom: 80px;
+}
+
+.zine-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.zine-title {
+  position: absolute;
+  left: -0.04em;
+  bottom: -0.5em;
+  max-width: 100%;
+  font-size: clamp(48px, 9vw, 128px);
+  font-weight: 700;
+  line-height: 0.95;
+  color: var(--c4);
+  text-shadow: 4px 4px 0 var(--c0), 0 0 2px var(--c0);
+  overflow-wrap: anywhere;
+}
+
+.zine-ja {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  writing-mode: vertical-rl;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--link);
+  text-shadow: 2px 2px 0 var(--c0);
+}
+
+.post-meta {
+  margin-bottom: 32px;
+  color: var(--text-muted);
+}
+
+.post-meta .mini-meta {
+  margin: 0 8px 0 0;
+}
+
+.post-body {
+  max-width: 68ch;
+  line-height: 1.7;
+}
+
+.post-body :is(p, ul, ol, pre, blockquote, figure, table) {
+  margin-bottom: 1.2em;
+}
+
+.post-body h2 {
+  margin: 2em 0 0.6em;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.post-body h3 {
+  margin: 1.6em 0 0.5em;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.post-body :is(ul, ol) {
+  padding-left: 1.5em;
+}
+
+.post-body img {
+  max-width: 100%;
+  filter: grayscale(1) sepia(0.2) brightness(0.85) contrast(1.1);
+  transition: filter 0.3s;
+}
+
+.post-body img:hover {
+  filter: none;
+}
+
+.post-body blockquote {
+  padding-left: 1em;
+  border-left: 2px solid var(--accent);
+  color: var(--text-muted);
+}
+
+.post-body :is(pre, code) {
+  background: var(--c1);
+}
+
+.post-body pre {
+  padding: 1em;
+  overflow: auto;
+}
+
+.post-body code {
+  padding: 0 0.2em;
+}
+
+.post-body pre code {
+  padding: 0;
+}
+
+.post-foot {
+  margin-top: 64px;
+}
+
+/* journal index: a grid of little zine covers */
+.zines {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 40px 32px;
+  margin-top: 48px;
+}
+
+.zine-card {
+  display: grid;
+  gap: 4px;
+  color: var(--text);
+}
+
+.zine-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.zine-card:hover img,
+.zine-card:focus-visible img {
+  transform: perspective(700px) rotateY(-6deg) rotateX(2deg) scale(1.02);
+  border-color: var(--accent);
+}
+
+.zine-card-title {
+  position: relative;
+  margin: -1.2em 0 4px 8px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 3px 3px 0 var(--c0);
+}
+
+.zine-card:hover .zine-card-title {
+  color: var(--link);
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Maxwell Volkan · journal</title>
+  <link href="https://maxvolkan.github.io/journal/"/>
+  <link rel="self" href="https://maxvolkan.github.io/feed.xml"/>
+  <id>https://maxvolkan.github.io/journal/</id>
+  <updated>2026-01-01T00:00:00Z</updated>
+  <author><name>Maxwell Volkan</name></author>
+
+</feed>
