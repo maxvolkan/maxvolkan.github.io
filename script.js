@@ -24,7 +24,7 @@ function renderDate(lang) {
 	else el.textContent = `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
 }
 
-const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta, .icon-label";
+const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta, .icon-label, .icon-meta";
 
 function getRevealEls() {
 	return [...document.querySelectorAll(REVEAL_SELECTOR)]
@@ -182,44 +182,42 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	const themeBtn = document.getElementById("themeToggle");
-	const savedTheme = localStorage.getItem("theme");
-
-	if (savedTheme === "dark") {
-		document.body.classList.add("dark");
+	// UI blips: tiny square-wave beeps when pointing at / clicking something, off until [ ♪ ] turns them on.
+	// The browser only lets audio start after a click, so the first hovers after a reload stay silent until then.
+	const soundBtn = document.getElementById("soundbtn");
+	if (soundBtn) {
+		let audio = null, soundOn = false;
+		try { soundOn = localStorage.getItem("sound") === "1"; } catch {}
+		const blip = (freq, len = 0.04) => {
+			if (!soundOn) return;
+			audio ??= new AudioContext();
+			if (audio.state === "suspended") audio.resume();
+			const osc = audio.createOscillator(), gain = audio.createGain(), t = audio.currentTime;
+			osc.type = "square";
+			osc.frequency.value = freq;
+			gain.gain.setValueAtTime(0.03, t);
+			gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
+			osc.connect(gain).connect(audio.destination);
+			osc.start(t);
+			osc.stop(t + len);
+		};
+		const showSound = () => soundBtn.setAttribute("aria-pressed", soundOn);
+		showSound();
+		soundBtn.addEventListener("click", () => {
+			soundOn = !soundOn;
+			try { localStorage.setItem("sound", soundOn ? "1" : "0"); } catch {}
+			showSound();
+		});
+		const CLICKABLE = "a, button, .icon, .project-title";
+		document.addEventListener("pointerover", (e) => {
+			const el = e.target.closest(CLICKABLE);
+			if (el && !el.contains(e.relatedTarget)) blip(1320);
+		});
+		document.addEventListener("click", (e) => { if (e.target.closest(CLICKABLE)) blip(660, 0.08); });
 	}
-
-	updateThemeIcon();
-
-	themeBtn?.addEventListener("click", () => {
-		document.body.classList.toggle("dark");
-
-		const isDark = document.body.classList.contains("dark");
-		localStorage.setItem("theme", isDark ? "dark" : "light");
-
-		updateThemeIcon();
-	});
 
 	revealAll();
 });
-
-const savedTheme = localStorage.getItem("theme");
-
-if (!savedTheme) {
-	const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-	if (prefersDark) {
-		document.body.classList.add("dark");
-		localStorage.setItem("theme", "dark");
-	}
-}
-
-function updateThemeIcon() {
-	const themeBtn = document.getElementById("themeToggle");
-	if (!themeBtn) return;
-
-	themeBtn.textContent =
-		document.body.classList.contains("dark") ? "[ ☉ ]" : "[ ☾ ]";
-};
 
 const monitor = document.getElementById("monitor");
 const monitorMedia = document.getElementById("monitorMedia");
@@ -270,18 +268,21 @@ function showMedia(i) {
 	monitorMedia.src = currentProject.media[i];
 }
 
-document.getElementById("monitorPrev").onclick = () => {
-	if (!currentProject) return;
-	currentIndex = (currentIndex - 1 + currentProject.media.length) % currentProject.media.length;
-	showMedia(currentIndex);
-};
+// the monitor only exists on the index page
+if (monitor) {
+	document.getElementById("monitorPrev").onclick = () => {
+		if (!currentProject) return;
+		currentIndex = (currentIndex - 1 + currentProject.media.length) % currentProject.media.length;
+		showMedia(currentIndex);
+	};
 
-document.getElementById("monitorNext").onclick = () => {
-	if (!currentProject) return;
-	currentIndex = (currentIndex + 1) % currentProject.media.length;
-	showMedia(currentIndex);
-};
+	document.getElementById("monitorNext").onclick = () => {
+		if (!currentProject) return;
+		currentIndex = (currentIndex + 1) % currentProject.media.length;
+		showMedia(currentIndex);
+	};
 
-document.getElementById("monitorClose").onclick = () => {
-	monitor.classList.remove("open");
-};
+	document.getElementById("monitorClose").onclick = () => {
+		monitor.classList.remove("open");
+	};
+}

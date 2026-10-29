@@ -25,6 +25,28 @@ a:hover::after {
     width: 100%;
 }
 
+/* Dark-only "concrete + rust" palette. --c0..--c4 is the ramp bg.js dithers through (one source of truth). */
+:root {
+  --c0: #121211;
+  --c1: #2b2a27;
+  --c2: #57544e;
+  --c3: #9a958a;
+  --c4: #d9d3c5;
+  --accent: #b4532a;  /* rust: borders, fills, hover marks */
+  --link: #d4723f;    /* lighter rust for link text (AA on --c0) */
+  --link-hover: var(--c4);
+  --bg: var(--c0);
+  --text-rgb: 217, 211, 197;
+  --text: rgb(var(--text-rgb));
+  --text-muted: var(--c3);
+  --text-subtle: rgba(var(--text-rgb), 0.45);
+  --text-faint: rgba(var(--text-rgb), 0.3);
+  --border: var(--c2);
+  --gutter: clamp(20px, 4vw, 64px);
+  --pixel: "DotGothic16", "Fira Mono", monospace;
+  background: var(--bg);
+}
+
 h1, h2 {
   font-family: "Fira Mono", monospace;
   font-weight: 400;
@@ -39,20 +61,12 @@ h3, h4 {
 }
 
 .name {
-	font-size: 2.15rem;
+	font-family: var(--pixel);
+	font-size: 2.75rem;
+	line-height: 1.1;
 }
 
 body {
-  --bg: #fbf6e8;
-  --text-rgb: 0, 0, 0;
-  --text: rgba(var(--text-rgb), 0.84);
- --text-muted: rgba(var(--text-rgb), 0.6);
-  --text-subtle: rgba(var(--text-rgb), 0.45);
-  --text-faint: rgba(var(--text-rgb), 0.3);
-  --border: #111;
-  --link: #0044cc;
-  --link-hover: #000000;
-  background: var(--bg);
   color: var(--text);
   font-family: "Fira Mono", monospace;
   	font-size: 0.875rem;
@@ -62,17 +76,6 @@ line-height: 1.5;
   justify-content: center;
   margin: auto;
   padding: 24px;
-  min-height: 100vh;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-body.dark {
-  --bg: #1D1E1F;
-	--text-rgb: 242, 242, 242;
-  --text: rgba(var(--text-rgb), 1);
-
- --link: #7db7ff;
-  --link-hover: #ffffff;
 }
 
 .subitem-list {
@@ -98,10 +101,25 @@ body.dark {
   opacity: 1;
 }
 
-.top-left    { top: 20px; left: 20px; }
-.top-right   { top: 20px; right: 20px; }
-.bottom-left { bottom: 20px; left: 20px; }
-.bottom-right{ bottom: 20px; right: 20px; }
+.top-left    { top: 20px; left: calc(var(--gutter) - 14px); }
+.top-right   { top: 20px; right: calc(var(--gutter) - 14px); }
+.bottom-left { bottom: 20px; left: calc(var(--gutter) - 14px); }
+.bottom-right{ bottom: 20px; right: calc(var(--gutter) - 14px); }
+
+/* a few corner buttons side by side */
+.corner-group {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+}
+
+.corner-group .corner-btn {
+  position: static;
+}
+
+#soundbtn[aria-pressed="false"] {
+  opacity: 0.45;
+}
 
 .layout {
   display: flex;
@@ -174,7 +192,7 @@ body.dark {
 
 .paper-links a {
   font-size: 0.875rem;
-  opacity: 0.55;
+  opacity: 0.85;
   text-decoration: none;
   padding-left: 4px;
 }
@@ -356,7 +374,8 @@ body:not(.revealed) a,
 body:not(.revealed) .corner-btn,
 body:not(.revealed) .corner-label,
 body:not(.revealed) .mini-meta,
-body:not(.revealed) .icon-label {
+body:not(.revealed) .icon-label,
+body:not(.revealed) .icon-meta {
   visibility: hidden;
 }
 
@@ -423,12 +442,21 @@ body:not(.revealed) .icon-label {
   opacity: 1;
 }
 
-/* ───────── desktop: a column of folder icons, the title in the middle ───────── */
-/* Parallax: bg.js sets --mx/--my on <html> (mouse, -0.5..0.5, eased) and each layer moves against the
-   mouse by its own amount: glyph field a little (far), icons by their --d, the title the most (near). */
+/* ───────── desktop: one left column in reading order (who, links, folders, news); the right side is the brain's ───────── */
+/* Parallax: bg.js sets --mx/--my on <html> (mouse, -0.5..0.5, eased) and each group moves against the mouse by
+   its own amount: title most (nearest), folders less, news less again, glyph field least. The brain and the
+   photo's depth map are the back layers. (Per group, not per folder: a transform on a folder row would
+   become the containing block of its panel.) */
 #desktop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: var(--gutter);
+  width: min(440px, 40vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 40px;
 }
 
 #glyphs {
@@ -436,81 +464,141 @@ body:not(.revealed) .icon-label {
 }
 
 #title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  translate: calc(-50% + var(--mx, 0) * -100px) calc(-50% + var(--my, 0) * -100px);
-  text-align: center;
+  translate: calc(var(--mx, 0) * -60px) calc(var(--my, 0) * -60px);
   text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg);
 }
 
 .role {
-  margin: 4px 0 8px;
+  margin: 8px 0;
   color: var(--text-muted);
 }
 
 #title .paper-links {
-  margin-top: 6px;
+  margin-top: 8px;
+}
+
+#title .paper-links a {
+  padding: 0 8px 0 0;
+}
+
+/* folders: a list of rows; hover, tab or tap one and its panel opens to the right as a detail pane */
+.folders {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  translate: calc(var(--mx, 0) * -36px) calc(var(--my, 0) * -36px);
 }
 
 .icon {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  translate: calc(-50% + var(--mx, 0) * var(--d, 1) * -40px) calc(-50% + var(--my, 0) * var(--d, 1) * -40px);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  column-gap: 16px;
   align-items: center;
-  font-size: 12px;
+  padding: 4px 0;
   outline: none;
   animation: slam 0.9s cubic-bezier(.07, 1, .1, 1) calc(0.3s + var(--i) * 0.08s) backwards;
 }
 
-.icon:hover,
-.icon:focus-within {
-  z-index: 2;
-}
-
 .icon canvas {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 0.3em;
+  grid-row: span 2;
+  width: 48px;
+  height: 48px;
   image-rendering: pixelated;
-  box-shadow: 0 0 30px rgba(var(--text-rgb), 0.45);
+  filter: grayscale(1) sepia(0.2) brightness(0.8) contrast(1.1);  /* placeholder crops, toned to the concrete palette */
+  box-shadow: 0 0 24px rgba(var(--text-rgb), 0.3);
   transition: scale 0.05s;
 }
 
 .icon:hover canvas,
 .icon:focus-within canvas {
   scale: 1.05;
+  box-shadow: 0 0 0 1px var(--accent), 0 0 24px rgba(var(--text-rgb), 0.3);
 }
 
 .icon-label {
+  font-family: var(--pixel);
+  font-size: 16px;
+  line-height: 1.2;
   text-shadow: 0 0 8px var(--bg), 0 0 3px var(--bg);
+}
+
+.icon:hover .icon-label,
+.icon:focus-within .icon-label {
+  color: var(--link);
+}
+
+.icon-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-shadow: 0 0 8px var(--bg);
 }
 
 .icon:focus-visible .icon-label {
   outline: 1px dashed var(--text);
 }
 
-/* The panel's padding bridges the gap to the icon so the hover survives the trip across. */
+/* The panel spans the whole folder list's height and starts at its right edge, with padding as a bridge,
+   so the pointer can always travel straight right from any row into the window without losing the hover. */
 .panel {
   display: none;
   position: absolute;
+  z-index: 2;
   top: 0;
-  left: 100%;
-  padding-left: 12px;
-  width: min(420px, 45vw);
-}
-
-.icon.up .panel {
-  top: auto;
   bottom: 0;
+  left: 100%;
+  width: min(460px, 42vw);
+  padding-left: 32px;
+  align-items: center;
 }
 
 .icon:hover .panel,
 .icon:focus-within .panel {
-  display: block;
+  display: flex;
+}
+
+.icon:hover .panel {
+  z-index: 3;  /* a hovered folder beats one that just has focus */
+}
+
+#news {
+  translate: calc(var(--mx, 0) * -24px) calc(var(--my, 0) * -24px);
+  animation-delay: 0.7s;
+  animation-fill-mode: backwards;
+}
+
+#news ul {
+  list-style: none;
+}
+
+#news li {
+  display: grid;
+  grid-template-columns: 3.5em 1fr;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+#news .mini-meta {
+  margin: 0;
+}
+
+/* photo credit, bottom centre */
+#credit {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 40;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 0 6px var(--bg), 0 0 2px var(--bg);
+}
+
+#credit a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 /* HUD corner brackets (from the old brain frame) */
@@ -529,6 +617,7 @@ body:not(.revealed) .icon-label {
 
 /* frosted window with a cut bottom-right corner */
 .window {
+  width: 100%;
   max-height: 70vh;
   overflow: auto;
   padding: 16px 20px 20px;
@@ -539,7 +628,9 @@ body:not(.revealed) .icon-label {
 }
 
 .window h2 {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-family: var(--pixel);
+  font-size: 18px;
 }
 
 .window h2 ~ h2,
@@ -590,7 +681,7 @@ html:has(#cursor.on) *:hover {
 html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .project-title:hover, .icon > canvas:hover) #cursor {
   width: 16px;
   height: 16px;
-  box-shadow: inset 2px 2px 0 var(--bg), inset 3px 3px 0 var(--text);
+  box-shadow: inset 2px 2px 0 var(--bg), inset 3px 3px 0 var(--accent);
 }
 
 @media (hover: none) {
@@ -626,48 +717,53 @@ html:has(a:hover, button:hover, summary:hover, input:hover, select:hover, .proje
   gap: 6px;
 }
 
-/* ───────── phones: the desktop becomes a list, folders open inline ───────── */
-@media (max-width: 600px) {
+
+/* ───────── phones and short screens: the column scrolls, folders open inline ───────── */
+@media (max-width: 600px), (max-height: 640px) {
   .name {
-    font-size: 1.6rem;
+    font-size: 2rem;
   }
 
   #desktop {
     position: static;
-    translate: none;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 64px 0 56px;
+    width: auto;
+    gap: 24px;
+    padding: 72px var(--gutter) 88px;
   }
 
   #title,
-  .icon {
-    position: static;
+  .folders,
+  #news {
     translate: none;
-  }
-
-  .icon {
-    align-items: flex-start;
-  }
-
-  .icon canvas {
-    width: 48px;
-    height: 48px;
   }
 
   .icon .panel {
     position: static;
+    grid-column: 1 / -1;
     width: auto;
     padding: 8px 0 0;
+  }
+
+  .icon:hover .panel,
+  .icon:focus-within .panel {
+    display: block;
   }
 
   .window {
     max-height: none;
   }
+
+  #credit {
+    position: static;
+    translate: none;
+    white-space: normal;
+    padding: 0 var(--gutter) 88px;
+  }
 }
 
-/* nothing on the desktop page is in flow, so drop body's min-height (it plus padding made a scrollbar) */
+/* The page's background lives on <html>, and on the desktop layout the body has no height at all
+   (nothing in it is in flow), so nothing (e.g. a dark-mode extension styling body) can paint over the
+   fixed canvases. That was the black bar at the top. */
 body:has(#desktop) {
-  min-height: 0;
+  padding: 0;
 }

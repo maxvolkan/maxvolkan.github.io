@@ -1,23 +1,28 @@
-// Background: one WebGL2 full-screen pass. A spinning brain (a sheet of turntable frames)
-// over an optional depth-parallax photo, mixed into one brightness, Bayer-dithered, then drawn
-// in the page theme's two colours. Ported from the beanlette_site PoC.
+// Background: one WebGL2 full-screen pass. A brutalist photo with depth parallax (the next one each visit),
+// a dark scrim behind the left text column, and a spinning brain (a sheet of turntable frames) on the right,
+// all mixed into one brightness, Bayer-dithered, then drawn through the page's concrete palette (--c0..--c4).
+// Ported from the beanlette_site PoC.
 
-// ───────── looks ─────────
+// ───────── settings (the ?tweak panel edits these live) ─────────
 // size = brain height in screen heights, x/y = brain centre (0..1 of the screen, past 1 = cut off),
-// opacity = how much ink the brain lays down, spin = frames/s, levels = tones after dithering,
-// px = canvas pixel size, strength/wiggle = the photo's mouse parallax and idle drift (the brain ignores the
-// mouse, it only spins), crisp = nearest-pixel brain (off = smooth), blend = crossfade between frames
-// (off = steps frame to frame), photo = photo behind.
-const STYLES = {
-  giant: { size: 0.9, x: 0.9, y: 0.5, opacity: 0.6, spin: 8, levels: 2, px: 2, strength: 1, wiggle: 1, crisp: false, blend: false, photo: false },
-  photo: { size: 0.9, x: 0.9, y: 0.5, opacity: 0,   spin: 8, levels: 3, px: 2, strength: 1, wiggle: 1, crisp: false, blend: false, photo: true },
-};
+// opacity = brain brightness (it hides the photo behind its silhouette), spin = frames/s, levels = tones after dithering, px = canvas pixel size,
+// strength/wiggle = mouse parallax and idle drift (the brain only drifts with the mouse, it never turns with it),
+// photo = photo brightness (low = it recedes), scrim = how dark the photo gets behind the left column,
+// crisp = nearest-pixel brain (off = smooth), blend = crossfade between brain frames (off = steps).
+const DEFAULTS = { size: 0.65, x: 0.83, y: 0.5, opacity: 0.85, spin: 9, levels: 5, px: 3, strength: 1, wiggle: 1, photo: 0.45, scrim: 0.35, crisp: false, blend: true };
 // Turntable sheet from tools/render-brain.py: `frames` frames of w×h in rows of `cols`.
 // black = the render's background brightness (0..1), counted as "no brain".
 const BRAIN = { src: 'assets/brain/brain.jpg', frames: 64, cols: 8, w: 448, h: 336, black: 0, start: 0 };
-// ponytail: placeholder photo for local testing only, swap for your own before shipping (no credit needed then)
-// Salk Institute by Carol M. Highsmith, public domain, via Wikimedia Commons
-const SCENE = 'scenes/brutal';
+// Each scene = scenes/<name>_color.jpg + scenes/<name>_depth.png (depth maps from tools/make-depth.mjs).
+// ponytail: Wikimedia stand-ins until the user's own photos replace them (then drop the credits)
+const SCENES = [
+  { name: 'kyoto',     credit: '<a href="https://commons.wikimedia.org/wiki/File:Kyoto_International_Conference_Center_1.jpg" target="_blank">Kyoto International Conference Center</a> (Sachio Ōtani) by Marie-Sophie Mejan, CC BY 4.0' },
+  { name: 'nakagin',   credit: '<a href="https://commons.wikimedia.org/wiki/File:Capsules_of_the_Nakagin_Capsule_Tower_dllu.jpg" target="_blank">Nakagin Capsule Tower</a> (Kisho Kurokawa) by Dllu, CC BY-SA 4.0' },
+  { name: 'kurashiki', credit: '<a href="https://commons.wikimedia.org/wiki/File:Kurashiki_City_Hall_(Kenzo_Tange)_4_-_panoramio.jpg" target="_blank">Kurashiki City Hall</a> (Kenzo Tange) by DVMG, CC BY 3.0' },
+  { name: 'shizuoka',  credit: '<a href="https://commons.wikimedia.org/wiki/File:Shizuoka_Press_and_Broadcasting_Center-closeup-jun21-2016.jpg" target="_blank">Shizuoka Press and Broadcasting Center</a> (Kenzo Tange) by Nesnad, CC BY 4.0' },
+  { name: 'bunka',     credit: '<a href="https://commons.wikimedia.org/wiki/File:Tokyo_Bunka_Kaikan.jpg" target="_blank">Tokyo Bunka Kaikan</a> (Kunio Maekawa) by Drivephotographer, CC0' },
+  { name: 'salk',      credit: '<a href="https://commons.wikimedia.org/wiki/File:Salk_Institute_Highsmith.jpg" target="_blank">Salk Institute</a> (Louis Kahn) by Carol M. Highsmith, public domain' },
+];
 
 // ───────── shaders ─────────
 // One triangle bigger than the screen covers every pixel; its corners come from gl_VertexID, so no vertex buffer.
@@ -43,9 +48,8 @@ const FRAG = `#version 300 es
   uniform float u_time;             // seconds
   uniform float u_frame;            // brain frame; the fraction blends into the next one
   uniform float u_frames, u_aspect, u_black;  // brain sheet: frame count, frame w/h, background brightness
-  uniform float u_size, u_x, u_y, u_opacity, u_photo, u_levels, u_strength, u_wiggle, u_crisp, u_blend;
-  uniform float u_base;             // brightness of the bare page: 1 on cream, 0 on dark
-  uniform vec3  u_dark, u_light;    // the theme's two colours
+  uniform float u_size, u_x, u_y, u_opacity, u_photo, u_scrim, u_levels, u_strength, u_wiggle, u_crisp, u_blend;
+  uniform vec3  u_palette[5];       // darkest → lightest
 
   in vec2 v_uv;
   out vec4 fragColor;
@@ -77,9 +81,16 @@ const FRAG = `#version 300 es
     return clamp(floor(v * (n - 1.0) + 0.5) / (n - 1.0), 0.0, 1.0);
   }
 
+  // 0..1 through the five palette colours (with 5 levels every tone lands exactly on one)
+  vec3 ramp(float q) {
+    float x = q * 4.0;
+    int i = min(int(x), 3);
+    return mix(u_palette[i], u_palette[i + 1], x - float(i));
+  }
+
   float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 
-  // crisp = nearest texel (the sprite's own chunky pixels), otherwise smooth bilinear
+  // crisp = nearest texel, otherwise smooth bilinear
   vec4 brainAt(vec2 b, float layer) {
     if (u_crisp > 0.5) {
       ivec2 size = textureSize(u_brain, 0).xy;
@@ -96,25 +107,31 @@ const FRAG = `#version 300 es
     // photo: shift where we read it by offset * depth, so near pixels move more (the PoC's trick)
     vec2 uv = coverUV(v_uv);
     vec2 offset = vec2(0.0, u_scroll * SCROLL_DISTORT) + drift + u_strength * mix(m * 0.2, m, u_turbo);
-    float photo = luma(texture(u_color, uv + offset * texture(u_depth, uv).g).rgb);
-    float v = mix(u_base, photo, u_photo);
+    float v = luma(texture(u_color, uv + offset * texture(u_depth, uv).g).rgb) * u_photo;
 
-    // brain: a box u_size screens tall (screen widths on portrait phones) centred at (u_x, u_y); it ignores the mouse and just spins
+    // scrim: darken the photo behind the left text column (all of it on portrait phones, where text spans the width)
+    float clear = smoothstep(0.15, 0.55, v_uv.x) * step(u_resolution.y, u_resolution.x);
+    v *= mix(u_scrim, 1.0, clear);
+
+    // brain: a box u_size screens tall (screen widths on portrait phones) centred at (u_x, u_y).
+    // It drifts a little against the mouse like the nearest layer but never turns with it.
     vec2 box = vec2(u_aspect, 1.0) * u_size * min(u_resolution.x, u_resolution.y);
-    vec2 b = (v_uv - vec2(u_x, 1.0 - u_y)) * u_resolution / box + 0.5;
+    vec2 b = (v_uv - vec2(u_x, 1.0 - u_y) + m * 0.015 * u_strength) * u_resolution / box + 0.5;
     if (b == clamp(b, 0.0, 1.0)) {
       b.y = 1.0 - b.y;  // frames are uploaded top row first
       float i = floor(u_frame);
       vec4 c = mix(brainAt(b, i), brainAt(b, mod(i + 1.0, u_frames)), (u_frame - i) * u_blend);
-      float ink = clamp((luma(c.rgb) - u_black) / (1.0 - u_black), 0.0, 1.0) * c.a;
-      v = mix(v, 1.0 - u_base, ink * u_opacity);  // brighter brain = more ink (light dots on dark, dark on cream)
+      float lum = luma(c.rgb);
+      float solid = smoothstep(0.02, 0.1, lum) * c.a;  // its silhouette: hides the photo so it reads as in front
+      float ink = clamp((lum - u_black) / (1.0 - u_black), 0.0, 1.0) * c.a;
+      v = mix(v, ink * u_opacity, solid);
     }
-    fragColor = vec4(mix(u_dark, u_light, dither(v, u_levels)), 1.0);
+    fragColor = vec4(ramp(dither(v, u_levels)), 1.0);
   }`;
 
 // ───────── helpers ─────────
 const $ = (s) => document.querySelector(s);
-const canvas = $('#bg'), f = $('#tweak form').elements;
+const canvas = $('#bg'), f = $('#tweak form').elements, credit = $('#credit');
 const clamp = (v, lo = 0, hi = 1) => Math.min(Math.max(v, lo), hi);
 // Frame-rate independent easing toward a target. Higher rate = snappier.
 const damp = (v, target, rate, dt) => target + (v - target) * Math.exp(-rate * dt);
@@ -126,31 +143,25 @@ const load = (src) => new Promise((ok, fail) => {
 });
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ───────── tweak panel (visit with ?tweak): its form is the live settings, presets fill it ─────────
-const params = new URLSearchParams(location.search);
-if (params.has('tweak')) $('#tweak').hidden = false;
-if (Object.hasOwn(STYLES, params.get('style'))) f.style.value = params.get('style');  // ?style=photo to compare looks
+// ───────── tweak panel (visit with ?tweak): its form holds the live settings ─────────
+if (new URLSearchParams(location.search).has('tweak')) $('#tweak').hidden = false;
 const showValues = () => { for (const o of document.querySelectorAll('#tweak output')) o.value = o.previousElementSibling.value; };
-const applyStyle = () => {
-  const s = STYLES[f.style.value];
-  for (const k in s) f[k].type === 'checkbox' ? f[k].checked = s[k] : f[k].value = s[k];
-  if (reduced) f.spin.value = f.wiggle.value = 0;
-  showValues();
-};
+for (const k in DEFAULTS) f[k].type === 'checkbox' ? f[k].checked = DEFAULTS[k] : f[k].value = DEFAULTS[k];
+if (reduced) f.spin.value = f.wiggle.value = 0;
 $('#tweak form').oninput = showValues;
-f.style.onchange = applyStyle;
-applyStyle();
+showValues();
 
-// ───────── theme: dither between the page's background and its ink colour ─────────
-let theme;
-const readTheme = () => {
-  const css = getComputedStyle(document.body), dark = document.body.classList.contains('dark');
-  const bg = css.getPropertyValue('--bg').trim().match(/\w\w/g).map((h) => parseInt(h, 16) / 255);
-  const ink = css.getPropertyValue('--text-rgb').split(',').map((n, k) => bg[k] + (n / 255 - bg[k]) * 0.84);
-  theme = dark ? { dark: bg, light: ink, base: 0 } : { dark: ink, light: bg, base: 1 };
-};
-readTheme();
-new MutationObserver(readTheme).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+// palette: read once from the CSS (--c0..--c4 on :root) so the colours are defined in one place
+const css = getComputedStyle(document.documentElement);
+const PALETTE = [0, 1, 2, 3, 4].flatMap((k) => css.getPropertyValue('--c' + k).trim().match(/\w\w/g).map((h) => parseInt(h, 16) / 255));
+
+// ───────── scene: random on the first visit, then the next one on each visit ─────────
+let scene = null;
+try { scene = localStorage.getItem('scene'); } catch {}
+scene = scene === null ? Math.floor(Math.random() * SCENES.length) : (Number(scene) + 1) % SCENES.length || 0;
+const saveScene = () => { try { localStorage.setItem('scene', scene); } catch {} };
+saveScene();
+const loadScene = (i) => Promise.all(['_color.jpg', '_depth.png'].map((s) => load(`scenes/${SCENES[i].name}${s}`)));
 
 // ───────── input → targets (the render loop eases toward them) ─────────
 const target = { x: 0.5, y: 0.5 }, mouse = { x: 0.5, y: 0.5 };  // 0..1, y down
@@ -166,8 +177,8 @@ addEventListener('deviceorientation', (e) => {
   target.x = (clamp(e.gamma, -45, 45) + 45) / 90;
   target.y = (clamp(e.beta, -45, 45) + 45) / 90;
 });
-// Hold the mouse button for 150ms → turbo: the photo warps
-addEventListener('mousedown', (e) => { if (!e.target.closest('#tweak')) held = setTimeout(() => turboTarget = 1, 150); });
+// Hold the mouse button for 150ms (not on a link or button) → turbo: the photo warps
+addEventListener('mousedown', (e) => { if (!e.target.closest('#tweak, a, button')) held = setTimeout(() => turboTarget = 1, 150); });
 addEventListener('mouseup', () => { clearTimeout(held); turboTarget = 0; });
 const onScroll = () => scrollTarget = clamp(scrollY / Math.max(1, document.body.clientHeight - innerHeight));
 addEventListener('scroll', onScroll, { passive: true });
@@ -201,20 +212,25 @@ async function main() {
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   };
 
-  const [color, depth, sheet] = await Promise.all([load(SCENE + '_color.jpg'), load(SCENE + '_depth.png'), load(BRAIN.src)]);
+  // Photo + depth on units 0/1. NEAREST keeps the crunchy look; flip Y because GL's origin is bottom-left.
+  const photoTex = [gl.createTexture(), gl.createTexture()];
+  const showScene = (imgs) => {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    imgs.forEach((img, unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, photoTex[unit]);
+      setFilter(gl.TEXTURE_2D, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    });
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    credit.innerHTML = 'photo, dithered: ' + SCENES[scene].credit;
+  };
 
-  // Photo + depth. NEAREST keeps the crunchy look; flip Y because GL's origin is bottom-left.
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  [color, depth].forEach((img, unit) => {
-    gl.activeTexture(gl.TEXTURE0 + unit);
-    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-    setFilter(gl.TEXTURE_2D, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-  });
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  const [imgs, sheet] = await Promise.all([loadScene(scene), load(BRAIN.src)]);
+  showScene(imgs);
 
   // Brain: each frame of the sheet goes through a small canvas into its own layer of a texture array,
-  // so frames never bleed into each other. LINEAR smooths it when it's blown up giant.
+  // so frames never bleed into each other. LINEAR smooths it when it's blown up.
   // ponytail: RGBA layers cost frames×w×h×4 bytes of GPU memory (~38MB now); fewer/smaller frames if phones struggle
   gl.activeTexture(gl.TEXTURE2);
   gl.bindTexture(gl.TEXTURE_2D_ARRAY, gl.createTexture());
@@ -232,6 +248,17 @@ async function main() {
   gl.uniform1f(u.u_frames, BRAIN.frames);
   gl.uniform1f(u.u_aspect, BRAIN.w / BRAIN.h);
   gl.uniform1f(u.u_black, BRAIN.black);
+  gl.uniform3fv(u['u_palette[0]'], PALETTE);
+
+  // [ ⟳ ]: the photo dissolves to black through the dither, swaps once the next one has loaded, and dissolves back in
+  let fade = 1, fadeTarget = 1, next = null, swapping = false;
+  $('#scenebtn').onclick = () => {
+    if (next) return;
+    scene = (scene + 1) % SCENES.length;
+    saveScene();
+    fadeTarget = 0;
+    next = loadScene(scene);
+  };
 
   const hoverless = matchMedia('(hover: none)');
   const t0 = performance.now();
@@ -246,7 +273,12 @@ async function main() {
     mouse.y = damp(mouse.y, target.y, 6, dt);
     scroll = damp(scroll, scrollTarget, 3, dt);
     turbo = damp(turbo, turboTarget, 3, dt);
+    fade = damp(fade, fadeTarget, 12, dt);
     spin = (spin + dt * +f.spin.value) % BRAIN.frames;
+    if (next && !swapping && fade < 0.02) {
+      swapping = true;
+      next.then(showScene, console.error).finally(() => { next = null; swapping = false; fadeTarget = 1; });
+    }
 
     // canvas pixels = CSS pixels / pixel size (ignores devicePixelRatio on purpose: chunkier dither)
     const px = +f.px.value, w = Math.round(canvas.clientWidth / px), h = Math.round(canvas.clientHeight / px);
@@ -264,16 +296,14 @@ async function main() {
     gl.uniform1f(u.u_crisp, f.crisp.checked ? 1 : 0);
     gl.uniform1f(u.u_blend, f.blend.checked ? 1 : 0);
     gl.uniform1f(u.u_opacity, +f.opacity.value);
-    gl.uniform1f(u.u_photo, f.photo.checked ? 1 : 0);
+    gl.uniform1f(u.u_photo, +f.photo.value * fade);
+    gl.uniform1f(u.u_scrim, +f.scrim.value);
     gl.uniform1f(u.u_levels, +f.levels.value);
     gl.uniform1f(u.u_strength, +f.strength.value);
     gl.uniform1f(u.u_wiggle, +f.wiggle.value);
-    gl.uniform1f(u.u_base, theme.base);
-    gl.uniform3fv(u.u_dark, theme.dark);
-    gl.uniform3fv(u.u_light, theme.light);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // DOM parallax: styles.css moves the title, icons and glyph field against the mouse by different amounts
+    // DOM parallax: styles.css moves the title, folders, news and glyph field against the mouse by different amounts
     if (!hoverless.matches) {
       document.documentElement.style.setProperty('--mx', mouse.x - 0.5);
       document.documentElement.style.setProperty('--my', mouse.y - 0.5);

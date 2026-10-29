@@ -1,7 +1,6 @@
 (() => {
   // tweak
-  const OPACITY_DARK  = 0.55;
-  const OPACITY_LIGHT = 0.95;
+  const OPACITY      = 0.55;
   const DENSITY       = 0.88;
   const CURSOR_GLOW   = 35;
   const GRID_PX       = 16;
@@ -143,19 +142,9 @@ void main(){
   gl.uniform1i(gl.getUniformLocation(prog, "u_glyphs"), 0);
   gl.clearColor(0, 0, 0, 0);
 
-  const readState = () => {
-    const isDark = document.body.classList.contains("dark");
-    const raw = getComputedStyle(document.body).getPropertyValue("--text-rgb").trim();
-    const [r, g, b] = raw.split(",").map(s => parseFloat(s) / 255);
-    const dim = isDark ? 0.6 : 0.9;
-    return {
-      ink: [r * dim, g * dim, b * dim],
-      alpha: isDark ? OPACITY_DARK : OPACITY_LIGHT,
-    };
-  };
-  let state = readState();
-  new MutationObserver(() => { state = readState(); })
-    .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  // glyph ink = the page's text colour, dimmed (the site is dark-only, so this never changes)
+  const raw = getComputedStyle(document.body).getPropertyValue("--text-rgb").trim();
+  const state = { ink: raw.split(",").map(s => parseFloat(s) / 255 * 0.6), alpha: OPACITY };
 
   const resize = () => {
     const w = Math.min(innerWidth, 3840);

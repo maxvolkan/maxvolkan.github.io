@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="styles.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Fira+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -17,21 +17,31 @@
         <button class="corner-btn top-left" id="homebtn">[ * ]</button>
         <div class="corner-label top-right" id="dateLabel"></div>
         <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
-        <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
+        <div class="corner-group bottom-right">
+                <button class="corner-btn" id="soundbtn" aria-pressed="false" title="sound">[ ♪ ]</button>
+                <button class="corner-btn" id="scenebtn" title="next photo">[ ⟳ ]</button>
+        </div>
 
-        <!-- Desktop: folders sit at --x/--y; hover, tab or tap one to open its panel (.up opens it upward).
-             --d = parallax depth, how far it drifts against the mouse. -->
+        <!-- Desktop: one left column in reading order. Hover, tab or tap a folder to open its panel to the right. -->
         <main id="desktop">
                 <header id="title">
                         <h1 class="name"><span>Maxwell Volkan</span></h1>
                         <p class="role" data-ja="小谷榛葉研究室 · 東京大学">Kotani &amp; Shimba Lab · The University of Tokyo</p>
                         <a href="mailto:maxwell@neuron.t.u-tokyo.ac.jp">maxwell@neuron.t.u-tokyo.ac.jp</a>
-                        <div class="paper-links"><a href="https://github.com/maxvolkan" target="_blank">[github]</a></div>
+                        <div class="paper-links">
+                                <a href="https://github.com/maxvolkan" target="_blank">[github]</a>
+                                <a href="https://maxreformed.substack.com/" target="_blank">[substack]</a>
+                                <a href="https://scholar.google.com/citations?user=DXjXiUYAAAAJ&amp;hl=en" target="_blank">[scholar]</a>
+                                <a href="https://orcid.org/0009-0002-8708-2784" target="_blank">[orcid]</a>
+                        </div>
                 </header>
 
-                <div class="icon" tabindex="0" style="--x:8%;--y:20%;--i:0;--d:0.7">
+                <nav class="folders">
+
+                <div class="icon" tabindex="0" style="--i:0">
                         <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
                         <span class="icon-label" data-ja="研究/">research/</span>
+                        <span class="icon-meta" data-ja="論文 3件">3 papers</span>
                         <div class="panel"><div class="window hud">
                                 <h2 data-ja="研究">Research</h2>
                                 <div class="subitem-list">
@@ -67,9 +77,10 @@
                         </div></div>
                 </div>
 
-                <div class="icon" tabindex="0" style="--x:8%;--y:38%;--i:1;--d:1.1">
+                <div class="icon" tabindex="0" style="--i:1">
                         <canvas width="24" height="24" data-src="assets/games/autogrotto/autogrotto_mine.webp"></canvas>
                         <span class="icon-label" data-ja="プロジェクト/">projects/</span>
+                        <span class="icon-meta" data-ja="4件">4 projects</span>
                         <div class="panel"><div class="window hud">
                                 <h2 data-ja="プロジェクト">Projects</h2>
                                 <div class="subitem-list">
@@ -81,9 +92,10 @@
                         </div></div>
                 </div>
 
-                <div class="icon up" tabindex="0" style="--x:8%;--y:62%;--i:2;--d:0.85">
+                <div class="icon" tabindex="0" style="--i:2">
                         <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
                         <span class="icon-label" data-ja="経歴/">cv/</span>
+                        <span class="icon-meta" data-ja="所属・学歴">affiliations · education</span>
                         <div class="panel"><div class="window hud">
                                 <h2 data-ja="所属">Affiliations</h2>
                                 <div class="subitem-list">
@@ -109,9 +121,10 @@
                         </div></div>
                 </div>
 
-                <div class="icon up" tabindex="0" style="--x:8%;--y:80%;--i:3;--d:1.25">
+                <div class="icon" tabindex="0" style="--i:3">
                         <canvas width="24" height="24" data-src="assets/games/neurobeat/bio_signals.webp"></canvas>
                         <span class="icon-label" data-ja="自己紹介.txt">bio.txt</span>
+                        <span class="icon-meta" data-ja="自己紹介">about me</span>
                         <div class="panel"><div class="window hud">
                                 <h2 data-ja="自己紹介">About Me</h2>
                                 <div class="subitem-list">
@@ -122,7 +135,19 @@
                                 </div>
                         </div></div>
                 </div>
+                </nav>
+
+                <section id="news" class="window hud">
+                        <h2 data-ja="ニュース">news</h2>
+                        <ul>
+                                <li><span class="mini-meta">2026</span><a href="https://www.nature.com/articles/s41526-026-00625-w" target="_blank" data-ja="宇宙飛行マウスの網膜損傷の論文が npj Microgravity に掲載">Retinal damage in spaceflown mice, out in npj Microgravity</a></li>
+                                <li><span class="mini-meta">2025</span><a href="papers/brain-heart-poster.pdf" target="_blank" data-ja="脳と心臓のメンタルワークロード指標を IEEJ EIS で発表">Brain and heart workload indexes at IEEJ EIS</a></li>
+                                <li><span class="mini-meta">2024</span><a href="https://doi.org/10.1167/jov.24.10.477" target="_blank" data-ja="主観的確信度と多感覚統合を VSS で発表">Confidence and multisensory integration at VSS</a></li>
+                        </ul>
+                </section>
         </main>
+
+        <div id="credit"></div>
 
         <div id="monitor" class="monitor">
                 <button class="monitor-tab" id="monitorClose">›</button>
@@ -138,23 +163,23 @@
                 </div>
         </div>
 
-        <!-- Background settings; shown only with ?tweak. Presets live in bg.js STYLES. -->
+        <!-- Background settings; shown only with ?tweak. Defaults live in bg.js DEFAULTS. -->
         <details id="tweak" hidden>
                 <summary>tweak ✧</summary>
                 <form>
-                        <label>style    <select name="style"><option>giant</option><option>photo</option></select></label>
                         <label>size     <input type="range" name="size"     min="0.3" max="3"  step="0.05"><output></output></label>
                         <label>x        <input type="range" name="x"        min="0"   max="1.5" step="0.01"><output></output></label>
                         <label>y        <input type="range" name="y"        min="-0.5" max="1.5" step="0.01"><output></output></label>
                         <label>opacity  <input type="range" name="opacity"  min="0"   max="1"  step="0.05"><output></output></label>
                         <label>spin     <input type="range" name="spin"     min="0"   max="20" step="0.5"><output></output></label>
-                        <label>levels   <input type="range" name="levels"   min="2"   max="6"  step="1"><output></output></label>
+                        <label>levels   <input type="range" name="levels"   min="2"   max="9"  step="1"><output></output></label>
                         <label>pixel    <input type="range" name="px"       min="1"   max="6"  step="1"><output></output></label>
                         <label>parallax <input type="range" name="strength" min="0"   max="3"  step="0.1"><output></output></label>
                         <label>wiggle   <input type="range" name="wiggle"   min="0"   max="5"  step="0.1"><output></output></label>
                         <label>crisp    <input type="checkbox" name="crisp"></label>
                         <label>blend    <input type="checkbox" name="blend"></label>
-                        <label>photo    <input type="checkbox" name="photo"></label>
+                        <label>photo    <input type="range" name="photo"    min="0"   max="1"  step="0.05"><output></output></label>
+                        <label>scrim    <input type="range" name="scrim"    min="0"   max="1"  step="0.05"><output></output></label>
                 </form>
         </details>
 
