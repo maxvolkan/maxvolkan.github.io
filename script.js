@@ -1,40 +1,53 @@
-const PROJECT_ICON_MAP = {
-	godot: "nf-dev-godot",
-	matlab: "nf-md-math_integral",
-	javascript: "nf-md-language_javascript",
-	python: "nf-md-language_python",
-	csharp: "nf-md-language_csharp",
-	html: "nf-md-language_html5",
-	css: "nf-md-language_css3",
-	unity: "nf-custom-unity",
-	cpp: "nf-md-language_cpp",
-}
 // tweak
-const SCRAMBLE_MS = 600;
+const SCRAMBLE_MS = 300;
 const SCRAMBLE_GLYPHS = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠿⡿▪▫■□◇◆◼◻▣▤▥▦▧▨▩";
 
 const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTHS_JA = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
 
-function renderDate(lang) {
-	const el = document.getElementById("dateLabel");
-	if (!el) return;
-	const now = new Date();
-	if (lang === "ja") el.textContent = `${MONTHS_JA[now.getMonth()]} ${now.getDate()}日`;
-	else el.textContent = `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
-}
-
 const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta, .icon-label, .icon-meta";
+
+const projectData = {
+	autogrotto: {
+		media: [
+			"assets/games/autogrotto/autogrotto_mine.webp",
+			"assets/games/autogrotto/autogrotto_scan.webp",
+			"assets/games/autogrotto/bot_builder.webp",
+		],
+		caption: "AutoGrotto — Procedural cave mining and automation."
+	},
+
+	samplechop: {
+		media: [
+			"assets/games/samplechop/sampler_demo.webp",
+		],
+		caption: "SampleChop — Minimal sampler-based rhythm game."
+	},
+
+	neurobeat: {
+		media: [
+			"assets/games/neurobeat/neurobeat_main_menu.webp",
+			"assets/games/neurobeat/neurobeat_gameplay.webp",
+			"assets/games/neurobeat/bio_signals.webp",
+		],
+		caption: "NeuroBeat — Multimodal BCI rhythm game prototype."
+	}
+};
 
 function getRevealEls() {
 	return [...document.querySelectorAll(REVEAL_SELECTOR)]
 		.filter(el => el.children.length === 0 && el.textContent.trim().length > 0);
 }
 
+// Scrambles every visible text in, the whole page within ~0.7s however many there are. Hidden ones
+// (closed windows) just get their text, so a language switch still updates them.
 function revealAll(updates = new Map(), stagger = 25) {
 	const list = getRevealEls();
 	updates.forEach((_, el) => { if (!list.includes(el)) list.push(el); });
-	list.forEach((el, i) => {
+	const shown = list.filter(el => el.getClientRects().length > 0);
+	const step = Math.min(stagger, 400 / Math.max(1, shown.length));
+	let k = 0;
+	list.forEach(el => {
 		let text;
 		if (updates.has(el)) {
 			text = updates.get(el);
@@ -43,9 +56,17 @@ function revealAll(updates = new Map(), stagger = 25) {
 			if (el._revealText === undefined) el._revealText = el.textContent;
 			text = el._revealText;
 		}
-		scrambleText(el, text, SCRAMBLE_MS, i * stagger);
+		if (shown.includes(el)) scrambleText(el, text, SCRAMBLE_MS, k++ * step);
+		else { el._scrambleGen = (el._scrambleGen || 0) + 1; el.textContent = text; }
 	});
 	document.body.classList.add("revealed");
+}
+
+// scramble everything inside one element (an opened window) back to its text
+function scrambleIn(root) {
+	const els = getRevealEls().filter(el => root.contains(el));
+	const step = Math.min(15, 250 / Math.max(1, els.length));
+	els.forEach((el, i) => scrambleText(el, el._revealText ?? el.textContent, SCRAMBLE_MS, i * step));
 }
 
 function applyLang(lang, animate = false) {
@@ -151,138 +172,78 @@ document.addEventListener("DOMContentLoaded", () => {
 		img.src = c.dataset.src;
 	});
 
-	// opening a folder scrambles its contents in
-	document.querySelectorAll(".icon").forEach(icon => {
-		const panel = icon.querySelector(".panel");
-		const scramble = () => getRevealEls()
-			.filter(el => panel.contains(el))
-			.forEach((el, i) => scrambleText(el, el._revealText ?? el.textContent, SCRAMBLE_MS, i * 15));
-		icon.addEventListener("mouseenter", scramble);
-		icon.addEventListener("focusin", (e) => {
-			if (!icon.matches(":hover") && !icon.contains(e.relatedTarget)) scramble();
+	// hovering (or tabbing to) a folder scrambles its grey meta line into a one-line peek, and back on leave
+	document.querySelectorAll(".icon-meta[data-peek]").forEach(meta => {
+		const icon = meta.closest(".icon");
+		const peek = () => scrambleText(meta, document.body.classList.contains("lang-ja") ? meta.dataset.peekJa : meta.dataset.peek, SCRAMBLE_MS);
+		const unpeek = () => scrambleText(meta, meta._revealText ?? meta.textContent, SCRAMBLE_MS);
+		icon.addEventListener("pointerenter", peek);
+		icon.addEventListener("focus", peek);
+		icon.addEventListener("pointerleave", unpeek);
+		icon.addEventListener("blur", unpeek);
+	});
+
+	// clicking a folder opens its window beside the folder list, vertically centred on it (kept on screen).
+	// It's a modal <dialog>: Esc, the focus trap and returning focus come free; styles.css dims the rest.
+	const folders = document.querySelector(".folders");
+	document.querySelectorAll(".icon[data-open]").forEach(btn => {
+		const dlg = document.getElementById(btn.dataset.open);
+		btn.addEventListener("click", () => {
+			const r = folders.getBoundingClientRect();
+			dlg.style.setProperty("--left", r.right + 32 + "px");
+			dlg.showModal();
+			const half = dlg.offsetHeight / 2;
+			dlg.style.setProperty("--top", Math.min(Math.max(r.top + r.height / 2, half + 16), innerHeight - half - 16) + "px");
+			btn.setAttribute("aria-expanded", "true");
+			scrambleIn(dlg);
+		});
+		dlg.addEventListener("close", () => btn.setAttribute("aria-expanded", "false"));
+		// a click on the backdrop lands on the dialog itself, outside its box (keyboard clicks target the button inside)
+		dlg.addEventListener("click", (e) => {
+			if (e.target !== dlg) return;
+			const b = dlg.getBoundingClientRect();
+			if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) dlg.close();
 		});
 	});
+
+	// projects window: a screenshot opens that project's gallery in place of the cards
+	const gallery = document.querySelector(".gallery");
+	if (gallery) {
+		const dlg = gallery.closest("dialog"), cards = dlg.querySelector(".cards");
+		const img = gallery.querySelector("img"), caption = gallery.querySelector(".gallery-caption"), count = gallery.querySelector(".gallery-count");
+		const steps = gallery.querySelectorAll("[data-step]");
+		let shots = [], at = 0, opener = null;
+		const show = () => { img.src = shots[at]; count.textContent = `${at + 1} / ${shots.length}`; };
+		const step = (d) => { at = (at + d + shots.length) % shots.length; show(); };
+		dlg.querySelectorAll("[data-gallery]").forEach(b => b.addEventListener("click", () => {
+			const p = projectData[b.dataset.gallery];
+			shots = p.media; at = 0; opener = b;
+			caption.textContent = p.caption;
+			steps.forEach(s => s.hidden = shots.length < 2);
+			show();
+			cards.hidden = true;
+			gallery.hidden = false;
+			gallery.querySelector(".gallery-back").focus();
+		}));
+		steps.forEach(b => b.addEventListener("click", () => step(+b.dataset.step)));
+		const back = () => {
+			if (gallery.hidden) return;
+			gallery.hidden = true;
+			cards.hidden = false;
+			opener?.focus();
+		};
+		gallery.querySelector(".gallery-back").addEventListener("click", back);
+		dlg.addEventListener("close", back);
+		dlg.addEventListener("keydown", (e) => {
+			if (gallery.hidden || shots.length < 2) return;
+			if (e.key === "ArrowLeft") step(-1);
+			if (e.key === "ArrowRight") step(1);
+		});
+	}
 
 	document.getElementById("homebtn").onclick = () => {
 		window.location.href = "/";
 	};
-	document.querySelectorAll(".project-title").forEach(el => {
-		const techList = el.dataset.tech?.split(",").map(t => t.trim()) || [];
-		let iconsHTML = "";
-
-		techList.forEach(tech => {
-			const cls = PROJECT_ICON_MAP[tech.toLowerCase()];
-			if (cls) {
-				iconsHTML += `<i class="project-icon ${cls}"></i>`;
-			}
-		});
-
-		if (iconsHTML.length > 0) {
-			el.innerHTML = `${el.innerHTML} ${iconsHTML}`;
-		}
-	});
-
-	// UI blips: tiny square-wave beeps when pointing at / clicking something, off until [ ♪ ] turns them on.
-	// The browser only lets audio start after a click, so the first hovers after a reload stay silent until then.
-	const soundBtn = document.getElementById("soundbtn");
-	if (soundBtn) {
-		let audio = null, soundOn = false;
-		try { soundOn = localStorage.getItem("sound") === "1"; } catch {}
-		const blip = (freq, len = 0.04) => {
-			if (!soundOn) return;
-			audio ??= new AudioContext();
-			if (audio.state === "suspended") audio.resume();
-			const osc = audio.createOscillator(), gain = audio.createGain(), t = audio.currentTime;
-			osc.type = "square";
-			osc.frequency.value = freq;
-			gain.gain.setValueAtTime(0.03, t);
-			gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
-			osc.connect(gain).connect(audio.destination);
-			osc.start(t);
-			osc.stop(t + len);
-		};
-		const showSound = () => soundBtn.setAttribute("aria-pressed", soundOn);
-		showSound();
-		soundBtn.addEventListener("click", () => {
-			soundOn = !soundOn;
-			try { localStorage.setItem("sound", soundOn ? "1" : "0"); } catch {}
-			showSound();
-		});
-		const CLICKABLE = "a, button, .icon, .project-title";
-		document.addEventListener("pointerover", (e) => {
-			const el = e.target.closest(CLICKABLE);
-			if (el && !el.contains(e.relatedTarget)) blip(1320);
-		});
-		document.addEventListener("click", (e) => { if (e.target.closest(CLICKABLE)) blip(660, 0.08); });
-	}
 
 	revealAll();
 });
-
-const monitor = document.getElementById("monitor");
-const monitorMedia = document.getElementById("monitorMedia");
-const monitorCaption = document.getElementById("monitorCaption");
-const projectData = {
-	autogrotto: {
-		media: [
-			"assets/games/autogrotto/autogrotto_mine.webp",
-			"assets/games/autogrotto/autogrotto_scan.webp",
-			"assets/games/autogrotto/bot_builder.webp",
-		],
-		caption: "AutoGrotto — Procedural cave mining and automation."
-	},
-
-	samplechop: {
-		media: [
-			"assets/games/samplechop/sampler_demo.webp",
-		],
-		caption: "SampleChop — Minimal sampler-based rhythm game."
-	},
-
-	neurobeat: {
-		media: [
-			"assets/games/neurobeat/neurobeat_main_menu.webp",
-			"assets/games/neurobeat/neurobeat_gameplay.webp",
-			"assets/games/neurobeat/bio_signals.webp",
-		],
-		caption: "NeuroBeat — Multimodal BCI rhythm game prototype."
-	}
-};
-let currentProject = null;
-let currentIndex = 0;
-
-function openProject(key) {
-	const data = projectData[key];
-	if (!data || data.media.length === 0) return;
-
-	currentProject = data;
-	currentIndex = 0;
-
-	showMedia(currentIndex);
-	monitorCaption.textContent = data.caption;
-
-	monitor.classList.add("open");
-}
-
-function showMedia(i) {
-	monitorMedia.src = currentProject.media[i];
-}
-
-// the monitor only exists on the index page
-if (monitor) {
-	document.getElementById("monitorPrev").onclick = () => {
-		if (!currentProject) return;
-		currentIndex = (currentIndex - 1 + currentProject.media.length) % currentProject.media.length;
-		showMedia(currentIndex);
-	};
-
-	document.getElementById("monitorNext").onclick = () => {
-		if (!currentProject) return;
-		currentIndex = (currentIndex + 1) % currentProject.media.length;
-		showMedia(currentIndex);
-	};
-
-	document.getElementById("monitorClose").onclick = () => {
-		monitor.classList.remove("open");
-	};
-}
