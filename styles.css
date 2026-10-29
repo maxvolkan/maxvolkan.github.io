@@ -665,6 +665,11 @@ html:has(#cursor.on) *:hover {
 
 #cursor {
   position: fixed;
+  inset: auto;  /* undo the popover defaults (centred box with a border and background) */
+  margin: 0;
+  padding: 0;
+  background: none;
+  overflow: visible;
   top: 0;
   left: 0;
   z-index: 1000;

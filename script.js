@@ -148,18 +148,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 	// custom cursor: a corner bracket whose tip sits on the mouse (styles.css changes it over clickable
-	// things); a touch turns it off so it never hangs around on phones
+	// things); a touch turns it off so it never hangs around on phones.
+	// It's a popover so it lives in the top layer like the open windows (modal dialogs draw above any
+	// z-index); raiseCursor() re-shows it after a window opens so it stays on top of that window.
 	const cursor = document.getElementById("cursor");
 	if (cursor) {
+		cursor.popover = "manual";
 		let touched = false;  // taps fire fake mousemoves too, so once touched it stays off
 		addEventListener("mousemove", (e) => {
 			if (touched) return;
 			cursor.style.left = e.clientX + "px";
 			cursor.style.top = e.clientY + "px";
+			if (!cursor.matches(":popover-open")) cursor.showPopover();
 			cursor.classList.add("on");
 		}, { passive: true });
 		addEventListener("touchstart", () => { touched = true; cursor.classList.remove("on"); }, { passive: true });
 	}
+	const raiseCursor = () => {
+		if (cursor?.matches(":popover-open")) { cursor.hidePopover(); cursor.showPopover(); }
+	};
 
 	// desktop icon thumbnails: a random crop of data-src drawn into a 24px canvas, CSS blows it up pixelated
 	document.querySelectorAll(".icon canvas[data-src]").forEach(c => {
@@ -192,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const r = folders.getBoundingClientRect();
 			dlg.style.setProperty("--left", r.right + 32 + "px");
 			dlg.showModal();
+			raiseCursor();
 			const half = dlg.offsetHeight / 2;
 			dlg.style.setProperty("--top", Math.min(Math.max(r.top + r.height / 2, half + 16), innerHeight - half - 16) + "px");
 			btn.setAttribute("aria-expanded", "true");
