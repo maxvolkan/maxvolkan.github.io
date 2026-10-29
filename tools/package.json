@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": { "depth": "node make-depth.mjs" },
+  "dependencies": { "@huggingface/transformers": "4.3.1" }
+}

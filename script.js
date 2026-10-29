@@ -24,7 +24,7 @@ function renderDate(lang) {
 	else el.textContent = `${MONTHS_EN[now.getMonth()].toUpperCase()} ${now.getDate()}`;
 }
 
-const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta";
+const REVEAL_SELECTOR = ".name span, h1, h2, h3, h4, p, a, .corner-btn, .corner-label, .mini-meta, .icon-label";
 
 function getRevealEls() {
 	return [...document.querySelectorAll(REVEAL_SELECTOR)]
@@ -126,51 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 
-	// tweak
-	const SPRITE_URL    = "assets/photos/brain.png";
-	const SPRITE_FRAMES = 43;
-	const FRAME_W       = 571;
-	const FRAME_H       = 320;
-	const SCRUB_EASE    = 0.12;
-	const IDLE_SPIN     = 0.18;
-	const FRAME_OFFSET  = 21;
-
-	const heroImg = document.querySelector(".hero-photo img");
-	if (heroImg && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-		const sprite = new Image();
-		sprite.onload = () => {
-			const canvas = document.createElement("canvas");
-			canvas.width = FRAME_W;
-			canvas.height = FRAME_H;
-			canvas.className = heroImg.className;
-			heroImg.replaceWith(canvas);
-
-			const ctx = canvas.getContext("2d");
-			let target = FRAME_OFFSET, current = FRAME_OFFSET, mouseSeen = false, last = performance.now();
-
-			addEventListener("mousemove", (e) => {
-				mouseSeen = true;
-				const nx = Math.max(0, Math.min(1, e.clientX / innerWidth));
-				target = (nx * (SPRITE_FRAMES - 1) + FRAME_OFFSET) % SPRITE_FRAMES;
-			}, { passive: true });
-
-			const draw = (now) => {
-				const dt = Math.min((now - last) / 16.67, 3); last = now;
-				if (!mouseSeen) target = (target + IDLE_SPIN * dt) % SPRITE_FRAMES;
-				let diff = target - current;
-				if (diff > SPRITE_FRAMES / 2) diff -= SPRITE_FRAMES;
-				else if (diff < -SPRITE_FRAMES / 2) diff += SPRITE_FRAMES;
-				current = (current + diff * SCRUB_EASE + SPRITE_FRAMES) % SPRITE_FRAMES;
-				const idx = Math.floor(current) % SPRITE_FRAMES;
-				ctx.clearRect(0, 0, FRAME_W, FRAME_H);
-				ctx.drawImage(sprite, idx * FRAME_W, 0, FRAME_W, FRAME_H, 0, 0, FRAME_W, FRAME_H);
-				requestAnimationFrame(draw);
-			};
-			requestAnimationFrame(draw);
-		};
-		sprite.src = SPRITE_URL;
-	}
-
 	const coords = document.getElementById("coordsLabel");
 	if (coords) {
 		const pad = (n) => String(n | 0).padStart(4, "0");
@@ -178,6 +133,39 @@ document.addEventListener("DOMContentLoaded", () => {
 			coords.textContent = `[ x:${pad(e.clientX)} y:${pad(e.clientY)} ]`;
 		}, { passive: true });
 	}
+
+	// custom cursor: a glyph that follows the mouse (styles.css swaps it over clickable things)
+	const cursor = document.getElementById("cursor");
+	if (cursor) {
+		addEventListener("mousemove", (e) => {
+			cursor.style.left = e.clientX + "px";
+			cursor.style.top = e.clientY + "px";
+			cursor.classList.add("on");
+		}, { passive: true });
+	}
+
+	// desktop icon thumbnails: a random crop of data-src drawn into a 24px canvas, CSS blows it up pixelated
+	document.querySelectorAll(".icon canvas[data-src]").forEach(c => {
+		const img = new Image();
+		img.onload = () => {
+			const s = Math.min(img.width, img.height) / 3;
+			const x = (img.width - s) * (0.3 + Math.random() * 0.4), y = (img.height - s) * (0.3 + Math.random() * 0.4);
+			c.getContext("2d").drawImage(img, x, y, s, s, 0, 0, 24, 24);
+		};
+		img.src = c.dataset.src;
+	});
+
+	// opening a folder scrambles its contents in
+	document.querySelectorAll(".icon").forEach(icon => {
+		const panel = icon.querySelector(".panel");
+		const scramble = () => getRevealEls()
+			.filter(el => panel.contains(el))
+			.forEach((el, i) => scrambleText(el, el._revealText ?? el.textContent, SCRAMBLE_MS, i * 15));
+		icon.addEventListener("mouseenter", scramble);
+		icon.addEventListener("focusin", (e) => {
+			if (!icon.matches(":hover") && !icon.contains(e.relatedTarget)) scramble();
+		});
+	});
 
 	document.getElementById("homebtn").onclick = () => {
 		window.location.href = "/";

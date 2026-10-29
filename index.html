@@ -12,188 +12,152 @@
 </head>
 
 <body>
-        <div class="page">
-                <button class="corner-btn top-left" id="homebtn">[ * ]</button>
-                <div class="corner-label top-right" id="dateLabel"></div>
-                <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
-                <div class="corner-label coords" id="coordsLabel">[ x:0000 y:0000 ]</div>
-                <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
+        <canvas id="bg" aria-hidden="true"></canvas>
 
-                <div class="hero-photo">
-                        <div class="brain-hud">
-                                <img src="assets/photos/brain.webp">
-                        </div>
-                </div>
-                <!-- <p>my brain</p> -->
-                <!-- <main class="layout"> -->
-                <!---->
-                <!-- 	<section class="left"> -->
-                <!-- 	</section> -->
-                <!---->
-                <!-- 	<section class="center"> -->
-                <!-- 	</section> -->
-                <!-- 	<section class="right"> -->
-                <!-- </section> -->
-                <!---->
-                <!-- </main> -->
+        <button class="corner-btn top-left" id="homebtn">[ * ]</button>
+        <div class="corner-label top-right" id="dateLabel"></div>
+        <button class="corner-btn bottom-left" id="langbtn">[ EN ]</button>
+        <div class="corner-label coords" id="coordsLabel">[ x:0000 y:0000 ]</div>
+        <button class="corner-btn bottom-right" id="themeToggle">[ ☾ ]</button>
 
-                <h1 class="name">
-                        <span>Maxwell Volkan</span><br>
-                </h1>
+        <!-- Desktop: folders sit at --x/--y; hover, tab or tap one to open its panel.
+             .flip opens the panel to the left, .up opens it upward. -->
+        <main id="desktop">
+                <header id="title">
+                        <h1 class="name"><span>Maxwell Volkan</span></h1>
+                        <p class="role" data-ja="Kotani &amp; Shimba 研究室 · 東京大学">Kotani &amp; Shimba Lab · The University of Tokyo</p>
+                        <a href="mailto:maxwell@neuron.t.u-tokyo.ac.jp">maxwell@neuron.t.u-tokyo.ac.jp</a>
+                </header>
 
-                <div class="link-row">
-                        <a href="mailto:maxwell@neuron.t.u-tokyo.ac.jp"
-                                class="link-item">maxwell@neuron.t.u-tokyo.ac.jp</a>
-                        <a href="/bio" class="link-item">...</a>
-                </div>
-
-                <div class="info-panel">
-                        <h2 data-ja="所属">Affiliations<h2>
-                                        <div class="subitem-list">
-                                                <p class="degree"><a href='https://neuron.t.u-tokyo.ac.jp/'>Kotani &
-                                                                Shimba Laboratory</a></p>
-                                                <p class="university" data-ja="東京大学(在籍中)">The University of Tokyo
-                                                        (Ongoing)</p>
-                                                <p data-ja="Fulbright フェロー (日本, 2024-2025)">Fulbright Fellow (Japan,
-                                                        2024-2025)</p>
-                                                <p class="university" data-ja="東京大学 (2025)">The University of Tokyo
-                                                        (2025)</p>
-                                                <p data-ja="NASA GeneLab 解析ワーキンググループ, AI/ML 部門">NASA GeneLab Analysis
-                                                        Working Group, AI/ML Division</p>
-                                                <p class="university" data-ja="(在籍中)">(Ongoing)</p>
-
-                                        </div>
-                                        <h4 data-ja="過去の所属">Past Affiliations<h4>
-                                                        <div class="subitem-list">
-                                                                <p class="degree" data-ja="研究助手, Samaha Lab">Research
-                                                                        Assistant, Samaha Lab</p>
-                                                                <p data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of
-                                                                        California, Santa
-                                                                        Cruz
-                                                                        (2024)</p>
+                <div class="icon" tabindex="0" style="--x:20%;--y:28%;--i:0">
+                        <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
+                        <span class="icon-label" data-ja="研究/">research/</span>
+                        <div class="panel"><div class="window hud">
+                                <h2 data-ja="研究">Research</h2>
+                                <div class="subitem-list">
+                                        <div class="paper-item">
+                                                <p class="paper-title">A Comparative Analysis of Brain and Heart Indexes as Biomarkers of Mental Workload</p>
+                                                <div class="paper-meta">
+                                                        <div class="paper-links">
+                                                                <a href="papers/brain-heart-preprint.pdf" target="_blank">[preprint]</a>
+                                                                <a href="papers/brain-heart-poster.pdf" target="_blank">[poster]</a>
                                                         </div>
+                                                        <span class="mini-meta">IEEJ EIS 2025</span>
+                                                </div>
+                                        </div>
+                                        <div class="paper-item">
+                                                <p class="paper-title">Machine Learning Ensemble Reveals Distinct Molecular Pathways of Retinal Damage in Spaceflown Mice</p>
+                                                <div class="paper-meta">
+                                                        <div class="paper-links">
+                                                                <a href="https://www.nature.com/articles/s41526-026-00625-w" target="_blank">[nature article]</a>
+                                                        </div>
+                                                        <span class="mini-meta">npj Microgravity 2026</span>
+                                                </div>
+                                        </div>
+                                        <div class="paper-item">
+                                                <p class="paper-title">How does subjective confidence influence multisensory integration?</p>
+                                                <div class="paper-meta">
+                                                        <div class="paper-links">
+                                                                <a href="https://doi.org/10.1167/jov.24.10.477" target="_blank">[abstract]</a>
+                                                        </div>
+                                                        <span class="mini-meta">Journal of Vision, VSS 2024</span>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div></div>
                 </div>
 
-                <section class="block">
-                        <h2 data-ja="学歴">Education</h2>
-                        <div class="subitem-list">
-                                <p class="degree" data-ja="人間環境学 修士課程">M.Sc. in Human and Engineered Environmental
-                                        Sciences
-                                <p class="university" data-ja="東京大学 (在籍中)">The University of Tokyo (Ongoing)</p>
-                                <p class="degree" data-ja="認知科学 学士 (最優等)">B.S. in Cognitive Science with
-                                        Highest
-                                        Honors
-                                </p>
-                                <p class="university" data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of California, Santa
-                                        Cruz
-                                        (2024)</p>
-                        </div>
-                </section>
-
-                <section class="block" id="researchIndex">
-                        <h2 data-ja="研究">Research</h2>
-                        <div class="subitem-list">
-                                <div class="paper-item">
-                                        <p class="paper-title">
-                                                A Comparative Analysis of Brain and Heart Indexes as Biomarkers of
-                                                Mental
-                                                Workload
-                                        </p>
-                                        <div class="paper-meta">
-                                                <div class="paper-links">
-                                                        <a href="papers/brain-heart-preprint.pdf"
-                                                                target="_blank">[preprint]</a>
-                                                        <a href="papers/brain-heart-poster.pdf"
-                                                                target="_blank">[poster]</a>
-                                                </div>
-                                                <span class="mini-meta">IEEJ EIS 2025</span>
-                                        </div>
+                <div class="icon flip" tabindex="0" style="--x:80%;--y:26%;--i:1">
+                        <canvas width="24" height="24" data-src="assets/games/autogrotto/autogrotto_mine.webp"></canvas>
+                        <span class="icon-label" data-ja="プロジェクト/">projects/</span>
+                        <div class="panel"><div class="window hud">
+                                <h2 data-ja="プロジェクト">Projects</h2>
+                                <div class="subitem-list">
+                                        <p class="project-title" onclick="openProject('autogrotto')">AutoGrotto</p>
+                                        <p class="project-title" onclick="openProject('samplechop')">SampleChop</p>
+                                        <a class="project-title" href="https://www.youtube.com/watch?v=7TO-skBlHlY" target="_blank">NeuroBeat : Bio-signal Rhythm Game</a>
+                                        <a class="project-title" href="https://max-reformed.itch.io/spellcheck" target="_blank">SpellCheck : error-driven typing game</a>
                                 </div>
-
-                                <div class="paper-item">
-                                        <p class="paper-title">
-                                                Machine Learning Ensemble Reveals Distinct Molecular Pathways of Retinal
-                                                Damage in Spaceflown Mice
-                                        </p>
-                                        <div class="paper-meta">
-                                                <div class="paper-links">
-                                                        <a href="https://www.nature.com/articles/s41526-026-00625-w"
-                                                                target="_blank">[nature article]</a>
-                                                </div>
-                                                <span class="mini-meta">npj Microgravity 2026</span>
-                                        </div>
-                                </div>
-                                <div class="paper-item">
-                                        <p class="paper-title">
-                                                How does subjective confidence influence multisensory
-                                                integration?
-                                        </p>
-                                        <div class="paper-meta">
-                                                <div class="paper-links">
-                                                        <a href="https://doi.org/10.1167/jov.24.10.477"
-                                                                target="_blank">[abstract]</a>
-                                                </div>
-
-                                                <span class="mini-meta">Journal of Vision, VSS 2024</span>
-                                        </div>
-                                </div>
-                        </div>
-                </section>
-
-                <section class="block" id="projectArchive">
-                        <h2 data-ja="プロジェクト">Projects</h2>
-                        <div class="subitem-list">
-                                <div class="project-item">
-                                        <p class="project-title" onclick="openProject('autogrotto')" data-type="godot">
-                                                AutoGrotto
-                                        </p>
-                                </div>
-
-                                <div class="project-item">
-                                        <p class="project-title" onclick="openProject('samplechop')" data-type="godot">
-                                                SampleChop
-                                        </p>
-                                </div>
-
-                                <div class="project-item">
-                                        <p class="project-title">
-                                                <a class="project-title"
-                                                        href='https://www.youtube.com/watch?v=7TO-skBlHlY'>
-                                                        NeuroBeat : Bio-signal Rhythm Game</a>
-                                        </p>
-                                </div>
-                                <div class="project-item">
-                                        <p class="project-title">
-                                                <a class="project-title"
-                                                        href='https://max-reformed.itch.io/spellcheck'>SpellCheck :
-                                                        error-driven
-                                                        typing
-                                                        game</a>
-                                        </p>
-                                </div>
-                        </div>
-                </section>
-                <div id="monitor" class="monitor">
-
-                        <button class="monitor-tab" id="monitorClose">›</button>
-
-                        <div class="monitor-content">
-
-                                <div class="monitor-media-wrapper">
-                                        <img id="monitorMedia" src="" alt="">
-                                </div>
-
-                                <div class="monitor-caption-bar">
-                                        <button class="media-nav small" id="monitorPrev">‹</button>
-
-                                        <p id="monitorCaption"></p>
-
-                                        <button class="media-nav small" id="monitorNext">›</button>
-                                </div>
-                        </div>
-                        <script src="script.js"></script>
-                        <script src="glyphs.js"></script>
+                        </div></div>
                 </div>
+
+                <div class="icon up" tabindex="0" style="--x:18%;--y:74%;--i:2">
+                        <canvas width="24" height="24" data-src="assets/photos/brain.webp"></canvas>
+                        <span class="icon-label" data-ja="経歴/">cv/</span>
+                        <div class="panel"><div class="window hud">
+                                <h2 data-ja="所属">Affiliations</h2>
+                                <div class="subitem-list">
+                                        <p class="degree"><a href="https://neuron.t.u-tokyo.ac.jp/" target="_blank">Kotani &amp; Shimba Laboratory</a></p>
+                                        <p class="university" data-ja="東京大学(在籍中)">The University of Tokyo (Ongoing)</p>
+                                        <p data-ja="Fulbright フェロー (日本, 2024-2025)">Fulbright Fellow (Japan, 2024-2025)</p>
+                                        <p class="university" data-ja="東京大学 (2025)">The University of Tokyo (2025)</p>
+                                        <p data-ja="NASA GeneLab 解析ワーキンググループ, AI/ML 部門">NASA GeneLab Analysis Working Group, AI/ML Division</p>
+                                        <p class="university" data-ja="(在籍中)">(Ongoing)</p>
+                                </div>
+                                <h4 data-ja="過去の所属">Past Affiliations</h4>
+                                <div class="subitem-list">
+                                        <p class="degree" data-ja="研究助手, Samaha Lab">Research Assistant, Samaha Lab</p>
+                                        <p class="university" data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of California, Santa Cruz (2024)</p>
+                                </div>
+                                <h2 data-ja="学歴">Education</h2>
+                                <div class="subitem-list">
+                                        <p class="degree" data-ja="人間環境学 修士課程">M.Sc. in Human and Engineered Environmental Sciences</p>
+                                        <p class="university" data-ja="東京大学 (在籍中)">The University of Tokyo (Ongoing)</p>
+                                        <p class="degree" data-ja="認知科学 学士 (最優等)">B.S. in Cognitive Science with Highest Honors</p>
+                                        <p class="university" data-ja="カリフォルニア大学サンタクルーズ校 (2024)">University of California, Santa Cruz (2024)</p>
+                                </div>
+                        </div></div>
+                </div>
+
+                <div class="icon flip up" tabindex="0" style="--x:82%;--y:72%;--i:3">
+                        <canvas width="24" height="24" data-src="assets/games/neurobeat/bio_signals.webp"></canvas>
+                        <span class="icon-label" data-ja="自己紹介.txt">bio.txt</span>
+                        <div class="panel"><div class="window hud">
+                                <h2 data-ja="自己紹介">About Me</h2>
+                                <div class="subitem-list">
+                                        <p>I am currently researching brain-heart coupling and specifically, how it relates to mental fatigue.</p>
+                                        <p>I am also interested in teleological questions in physiology, as well as connecting high level behavior to low level neural mechanisms.</p>
+                                        <p>I also develop games both inside and outside of research, including a recent biosignal-controlled rhythm game designed to incorporate BCI technology with a focus on smooth and intuitive controls.</p>
+                                        <a href="/bio">/bio →</a>
+                                </div>
+                        </div></div>
+                </div>
+        </main>
+
+        <div id="monitor" class="monitor">
+                <button class="monitor-tab" id="monitorClose">›</button>
+                <div class="monitor-content">
+                        <div class="monitor-media-wrapper">
+                                <img id="monitorMedia" src="" alt="">
+                        </div>
+                        <div class="monitor-caption-bar">
+                                <button class="media-nav small" id="monitorPrev">‹</button>
+                                <p id="monitorCaption"></p>
+                                <button class="media-nav small" id="monitorNext">›</button>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Background settings; shown only with ?tweak. Presets live in bg.js STYLES. -->
+        <details id="tweak" hidden>
+                <summary>tweak ✧</summary>
+                <form>
+                        <label>style    <select name="style"><option>giant</option><option>photo</option></select></label>
+                        <label>size     <input type="range" name="size"     min="0.3" max="3"  step="0.05"><output></output></label>
+                        <label>opacity  <input type="range" name="opacity"  min="0"   max="1"  step="0.05"><output></output></label>
+                        <label>spin     <input type="range" name="spin"     min="0"   max="20" step="0.5"><output></output></label>
+                        <label>levels   <input type="range" name="levels"   min="2"   max="6"  step="1"><output></output></label>
+                        <label>pixel    <input type="range" name="px"       min="1"   max="6"  step="1"><output></output></label>
+                        <label>parallax <input type="range" name="strength" min="0"   max="3"  step="0.1"><output></output></label>
+                        <label>wiggle   <input type="range" name="wiggle"   min="0"   max="5"  step="0.1"><output></output></label>
+                        <label>photo    <input type="checkbox" name="photo"></label>
+                </form>
+        </details>
+
+        <div id="cursor"></div>
+
+        <script src="script.js"></script>
+        <script type="module" src="bg.js"></script>
 </body>
 
 </html>
