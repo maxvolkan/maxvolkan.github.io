@@ -11,8 +11,9 @@
     <link href="https://maxvolkan.github.io/journal/test-post/"/>
     <id>https://maxvolkan.github.io/journal/test-post/</id>
     <updated>2026-10-30T00:00:00Z</updated>
-    <summary>one line for the cards, the feed and LinkedIn</summary>
-    <content type="html">&lt;p&gt;Test Website post.&lt;/p&gt;
+    <summary></summary>
+    <content type="html">&lt;p&gt;Test Website post.
+&lt;img src=&quot;https://maxvolkan.github.io/journal/test-post/img-3210.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
 </content>
   </entry>
 </feed>
