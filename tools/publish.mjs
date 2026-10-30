@@ -1,4 +1,5 @@
-// Journal: write posts as posts/<slug>.md (images next to it in posts/<slug>/), then from the repo root:
+// Journal: posts are posts/<slug>.md (images next to it in posts/<slug>/). Write them in the CMS
+// (node tools/cms.mjs, see the top of that file) or in any editor, then from the repo root:
 //   node tools/publish.mjs new "My title"          start posts/<slug>.md from a template (as a draft)
 //   node tools/publish.mjs                         build journal/, feed.xml and the journal rows on index.html
 //   node tools/publish.mjs --drafts                ...including draft posts, to preview at localhost
@@ -11,7 +12,8 @@
 //
 // LinkedIn setup (once): create an app at https://www.linkedin.com/developers/apps (LinkedIn makes you link
 // it to a Page; a placeholder Page is fine), add the products "Share on LinkedIn" and "Sign In with LinkedIn
-// using OpenID Connect", add the redirect URL http://localhost:8787/callback, then put its keys in
+// using OpenID Connect", add the redirect URLs http://localhost:8787/callback (this CLI) and
+// https://<lab pc>.<tailnet>.ts.net/api/linkedin/callback (the CMS), then put its keys in
 // tools/.secrets.json (gitignored): {"linkedin": {"client_id": "…", "client_secret": "…"}}
 // The first crosspost opens a LinkedIn login in your browser; the token lasts ~60 days, then it asks again.
 // Substack has no API, so its crosspost copies a paste-ready version and opens the Substack editor.
@@ -24,18 +26,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { marked } from 'marked';
 import sharp from 'sharp';
 
-const SITE = 'https://maxvolkan.github.io';
-const SUBSTACK = 'https://maxreformed.substack.com/publish/post';
+export const SITE = 'https://maxvolkan.github.io';
+export const SUBSTACK = 'https://maxreformed.substack.com/publish/post';
 const TOOLS = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.join(TOOLS, '..');
-const POSTS = path.join(ROOT, 'posts');
+export const ROOT = path.join(TOOLS, '..');
+export const POSTS = path.join(ROOT, 'posts');
 const OUT = path.join(ROOT, 'journal');
 const SECRETS = path.join(TOOLS, '.secrets.json');
 const CROSSPOSTED = path.join(POSTS, '.crossposted.json');
 const PORT = 8787, REDIRECT = `http://localhost:${PORT}/callback`;
 
 // ───────── small helpers ─────────
-const die = (msg) => { console.error(msg); process.exit(1); };
+const die = (msg) => { throw new Error(msg); };
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const readJSON = (f, fallback) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return fallback; } };
 const writeJSON = (f, v) => fs.writeFileSync(f, JSON.stringify(v, null, 2) + '\n');
@@ -55,28 +57,56 @@ export function parseFrontMatter(text) {
   return { meta, body: text.slice(m[0].length) };
 }
 
+// the reverse, keys in a fixed order (unknown ones after), every value on one line
+const KEYS = ['title', 'date', 'summary', 'cover', 'focus', 'cover_art', 'draft', 'crosspost'];
+export const stringifyFrontMatter = (meta, body) => `---\n${[...new Set([...KEYS.filter((k) => k in meta), ...Object.keys(meta)])]
+  .map((k) => { const v = String(meta[k] ?? '').replace(/\s*\n\s*/g, ' ').trim(); return v ? `${k}: ${v}` : `${k}:`; }).join('\n')}\n---\n${body}`;
+
 // relative src/href → absolute (feeds and Substack need full URLs)
 export const absolutize = (html, base) => html.replace(/\b(src|href)="(?![a-z][\w+.-]*:|#)([^"]*)"/gi, (_, attr, url) => `${attr}="${new URL(url, base)}"`);
 
 // LinkedIn post text is "little text": these characters mean markup and must be backslash-escaped
 export const little = (s) => s.replace(/[\\|{}@[\]()<>#*_~]/g, '\\$&');
 
-// ───────── posts ─────────
-function readPosts({ drafts }) {
-  if (!fs.existsSync(POSTS)) return [];
-  return fs.readdirSync(POSTS).filter((f) => f.endsWith('.md')).map((f) => {
-    const slug = f.slice(0, -3);
-    const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(POSTS, f), 'utf8'));
-    if (!meta.title || !/^\d{4}-\d{2}-\d{2}$/.test(meta.date ?? '')) die(`posts/${f}: needs a title and a date like 2026-10-30`);
-    return { slug, meta, html: marked.parse(body), dir: path.join(POSTS, slug) };
-  }).filter((p) => drafts || p.meta.draft !== 'true').sort((a, b) => b.meta.date.localeCompare(a.meta.date));
+// `focus: x,y` (0–1, where to keep when the cover is cropped) → an object-position style; anything else → centred
+export const focusStyle = (f = '') => {
+  const [x, y] = f.split(',').map(Number);
+  return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? ` style="object-position:${Math.round(x * 100)}% ${Math.round(y * 100)}%"` : '';
+};
+
+// Code 39, digits only: each character is 5 bars and 4 spaces, 1 = wide (3 units); '*' starts and stops it
+const C39 = { '*': '010010100', 0: '000110100', 1: '100100001', 2: '001100001', 3: '101100000', 4: '000110001', 5: '100110000', 6: '001110000', 7: '000100101', 8: '100100100', 9: '001100100' };
+export function barcode(digits) {
+  let x = 0, bars = '';
+  for (const ch of `*${digits}*`) {
+    [...C39[ch]].forEach((w, i) => {
+      if (i % 2 === 0) bars += `<rect x="${x}" width="${w === '1' ? 3 : 1}" height="1"/>`;
+      x += w === '1' ? 3 : 1;
+    });
+    x += 1;  // narrow gap between characters
+  }
+  return `<svg viewBox="0 0 ${x - 1} 1" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">${bars}</svg>`;
 }
+
+// ───────── posts ─────────
+export function readPost(slug) {
+  const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(POSTS, slug + '.md'), 'utf8'));
+  if (!meta.title || !/^\d{4}-\d{2}-\d{2}$/.test(meta.date ?? '')) die(`posts/${slug}.md: needs a title and a date like 2026-10-30`);
+  // editors link pasted images as <slug>/photo.jpg (relative to the .md); on the built page they sit beside it
+  const html = marked.parse(body).replaceAll(`src="${slug}/`, 'src="').replaceAll(`href="${slug}/`, 'href="');
+  // its ## headings are the cover lines
+  const lines = marked.lexer(body).filter((t) => t.type === 'heading' && t.depth === 2).slice(0, 4).map((t) => t.text.replace(/[*_`]/g, ''));
+  return { slug, meta, html, lines, dir: path.join(POSTS, slug), cover: meta.cover_art || 'cover.png' };
+}
+
+export const readPosts = ({ drafts }) => !fs.existsSync(POSTS) ? [] : fs.readdirSync(POSTS).filter((f) => f.endsWith('.md'))
+  .map((f) => readPost(f.slice(0, -3))).filter((p) => drafts || p.meta.draft !== 'true').sort((a, b) => b.meta.date.localeCompare(a.meta.date));
 
 // The site's own look for covers: grey → 4x4 Bayer dither → the concrete palette from styles.css, at 2px pixels.
 const PALETTE = [...fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8').matchAll(/--c(\d):\s*#([0-9a-f]{6})/gi)]
   .sort((a, b) => a[1] - b[1]).map((m) => m[2].match(/../g).map((h) => parseInt(h, 16)));
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-async function ditherCover(input, dest) {
+export async function ditherCover(input, dest) {
   const { data, info } = await input.resize({ width: 480 }).grayscale().raw().toBuffer({ resolveWithObject: true });
   const n = PALETTE.length, out = Buffer.alloc(info.width * info.height * 3);
   for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
@@ -88,9 +118,10 @@ async function ditherCover(input, dest) {
     .resize({ width: info.width * 2, kernel: 'nearest' }).png({ palette: true }).toFile(dest);
 }
 
-// No cover? Use a frame of the brain turntable, a different angle per post.
-function brainFrame(slug) {
-  const k = [...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 64;
+// the picture a dithered cover starts from: the cover photo, or a frame of the brain turntable (a different angle per post)
+export function coverSource(p) {
+  if (p.meta.cover) return sharp(path.join(p.dir, p.meta.cover)).rotate();
+  const k = [...p.slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 64;
   return sharp(path.join(ROOT, 'assets/brain/brain.jpg')).extract({ left: (k % 8) * 448, top: Math.floor(k / 8) * 336, width: 448, height: 336 });
 }
 
@@ -123,16 +154,17 @@ const foot = (depth) => `
 </html>
 `;
 
-const postPage = (p, cover) => head(`${p.meta.title} · Maxwell Volkan`, p.meta.summary, `${SITE}/journal/${p.slug}/${cover}`, `${SITE}/journal/${p.slug}/`, '../../') + `
+export const renderPostPage = (p) => head(`${p.meta.title} · Maxwell Volkan`, p.meta.summary, `${SITE}/journal/${p.slug}/${p.cover}`, `${SITE}/journal/${p.slug}/`, '../../') + `
 <body class="journal">
         <button class="corner-btn top-left" id="homebtn">[ * ]</button>
         <a class="corner-btn top-right" href="../">[ journal ]</a>
 
         <article class="post">
                 <header class="zine">
-                        <img class="zine-cover" src="${cover}" alt="">
+                        <img class="zine-cover" src="${p.cover}" alt=""${focusStyle(p.meta.focus)}>
+                        ${p.lines.length ? `<ul class="zine-lines">${p.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
+                        <div class="zine-code">${barcode(p.meta.date.replaceAll('-', ''))}<span>${p.meta.date.replaceAll('-', '')}</span></div>
                         <h1 class="zine-title">${esc(p.meta.title)}</h1>
-                        ${p.meta.title_ja ? `<p class="zine-ja" lang="ja">${esc(p.meta.title_ja)}</p>` : ''}
                 </header>
                 <p class="post-meta"><span class="mini-meta">${dotDate(p.meta.date)}</span> ${esc(p.meta.summary)}</p>
                 <div class="post-body">
@@ -151,7 +183,7 @@ const indexPage = (posts) => head('journal · Maxwell Volkan', 'Notes on researc
                 <p class="role">notes on research, games and things in between · <a href="../feed.xml">[rss]</a></p>
                 <div class="zines">
 ${posts.map((p) => `                        <a class="zine-card" href="${p.slug}/">
-                                <img src="${p.slug}/${p.cover}" alt="">
+                                <img src="${p.slug}/${p.cover}" alt=""${focusStyle(p.meta.focus)}>
                                 <span class="zine-card-title">${esc(p.meta.title)}</span>
                                 <span class="mini-meta">${dotDate(p.meta.date)}</span>
                                 <span class="card-desc">${esc(p.meta.summary)}</span>
@@ -182,8 +214,8 @@ ${posts.map((p) => {
 </feed>
 `;
 
-// index.html keeps two generated regions between marker comments: the newest posts at the top of the news
-// panel, and a journal/ row in the folder list (only once there's a post)
+// index.html keeps two generated regions between marker comments: the newest posts in the news panel (script.js
+// sorts them in with the paper news by data-date), and a journal/ row in the folder list (only once there's a post)
 const between = (html, name, content) => {
   const re = new RegExp(`(<!-- journal:${name}:start -->)[\\s\\S]*?(<!-- journal:${name}:end -->)`);
   if (!re.test(html)) die(`index.html lost its <!-- journal:${name}:start/end --> markers`);
@@ -192,48 +224,44 @@ const between = (html, name, content) => {
 function updateIndex(posts) {
   const file = path.join(ROOT, 'index.html');
   let html = between(fs.readFileSync(file, 'utf8'), 'news', posts.slice(0, 3).map((p) =>
-    `\n                                <li><span class="mini-meta">${dotDate(p.meta.date).slice(0, 7)}</span><a href="journal/${p.slug}/"${p.meta.title_ja ? ` data-ja="${esc(p.meta.title_ja)}"` : ''}>${esc(p.meta.title)}</a></li>`).join('') + (posts.length ? '\n                                ' : ''));
+    `\n                                <li data-date="${p.meta.date}"><span class="mini-meta">${dotDate(p.meta.date).slice(0, 7)}</span><a href="journal/${p.slug}/">${esc(p.meta.title)}</a></li>`).join('') + (posts.length ? '\n                                ' : ''));
   const latest = posts[0];
   html = between(html, 'folder', latest ? `
                         <a class="icon" href="journal/" style="--i:4">
                                 <canvas width="24" height="24" data-src="journal/${latest.slug}/${latest.cover}"></canvas>
                                 <span class="icon-label" data-ja="日誌/">journal/</span>
-                                <span class="icon-meta" data-ja="${posts.length}件" data-peek="latest: ${esc(latest.meta.title)}" data-peek-ja="最新: ${esc(latest.meta.title_ja || latest.meta.title)}">${posts.length} post${posts.length > 1 ? 's' : ''}</span>
+                                <span class="icon-meta" data-ja="${posts.length}件" data-peek="latest: ${esc(latest.meta.title)}" data-peek-ja="最新: ${esc(latest.meta.title)}">${posts.length} post${posts.length > 1 ? 's' : ''}</span>
                         </a>
                         ` : '');
   fs.writeFileSync(file, html);
 }
 
-async function build({ drafts }) {
+export async function build({ drafts = false } = {}) {
   const posts = readPosts({ drafts });
   fs.rmSync(OUT, { recursive: true, force: true });
   for (const p of posts) {
     const dir = path.join(OUT, p.slug);
     fs.mkdirSync(dir, { recursive: true });
-    // a hand-made cover_art is used as is; a cover photo (or the brain) gets dithered
-    if (p.meta.cover_art) p.cover = p.meta.cover_art;
-    else {
-      p.cover = 'cover.png';
-      await ditherCover(p.meta.cover ? sharp(path.join(p.dir, p.meta.cover)) : brainFrame(p.slug), path.join(dir, p.cover));
-    }
-    if (fs.existsSync(p.dir)) fs.cpSync(p.dir, dir, { recursive: true, filter: (src) => path.basename(src) !== p.meta.cover });  // the post's images (not the undithered cover)
-    fs.writeFileSync(path.join(dir, 'index.html'), postPage(p, p.cover));
+    if (!p.meta.cover_art) await ditherCover(coverSource(p), path.join(dir, p.cover));  // a hand-made cover_art is used as is
+    if (fs.existsSync(p.dir)) fs.cpSync(p.dir, dir, { recursive: true });  // the post's images
+    fs.writeFileSync(path.join(dir, 'index.html'), renderPostPage(p));
   }
   fs.mkdirSync(OUT, { recursive: true });
   fs.writeFileSync(path.join(OUT, 'index.html'), indexPage(posts));
   fs.writeFileSync(path.join(ROOT, 'feed.xml'), feed(posts));
   updateIndex(posts);
-  console.log(`built ${posts.length} post${posts.length === 1 ? '' : 's'}${drafts ? ' (drafts included: rebuild without --drafts before committing)' : ''}`);
+  return posts;
 }
 
-function newPost(title) {
-  if (!title) die('usage: node tools/publish.mjs new "My title"');
-  const slug = slugify(title), file = path.join(POSTS, slug + '.md');
+export function newPost(title = '') {
+  title = title.replace(/\s+/g, ' ').trim();
+  const slug = slugify(title);
+  if (!slug) die('usage: node tools/publish.mjs new "My title"');
+  const file = path.join(POSTS, slug + '.md');
   if (fs.existsSync(file)) die(`posts/${slug}.md already exists`);
   fs.mkdirSync(path.join(POSTS, slug), { recursive: true });
   fs.writeFileSync(file, `---
 title: ${title}
-title_ja:
 date: ${new Date().toISOString().slice(0, 10)}
 summary: one line for the cards, the feed and LinkedIn
 cover:
@@ -241,27 +269,57 @@ draft: true
 crosspost: linkedin, substack
 ---
 
-Write in Markdown. Images go in posts/${slug}/ and are linked like ![what it shows](photo.jpg).
+Write in Markdown. Images go in posts/${slug}/ and are linked like ![what it shows](${slug}/photo.jpg)
+(the CMS does both when you paste or drop one). Each ## heading becomes a line on the cover.
 Set \`cover: photo.jpg\` for a dithered cover (empty = a frame of the brain), or \`cover_art: art.png\`
 for a cover you designed yourself (used as is). Delete \`draft: true\` when it's ready.
 `);
-  console.log(`wrote posts/${slug}.md (put its images in posts/${slug}/)`);
+  return slug;
 }
 
 // ───────── crossposting ─────────
+export const postUrl = (slug) => `${SITE}/journal/${slug}/`;
+export const isLive = async (slug) => !!(await fetch(postUrl(slug), { method: 'HEAD' }).catch(() => null))?.ok;
+export const targets = (p) => (p.meta.crosspost ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+export const crossposted = () => readJSON(CROSSPOSTED, {});
+export function markCrossposted(slug, target) {
+  const done = crossposted();
+  (done[slug] ??= {})[target] = new Date().toISOString().slice(0, 10);
+  writeJSON(CROSSPOSTED, done);
+}
+
 function openInBrowser(url) {
   try { execFileSync('powershell.exe', ['-NoProfile', '-Command', `Start-Process '${url.replaceAll("'", "''")}'`]); }
   catch { console.log('open this in your browser:', url); }
 }
 
-async function linkedinLogin() {
+function linkedinApp() {
   const secrets = readJSON(SECRETS, {});
-  const li = secrets.linkedin;
-  if (!li?.client_id || !li?.client_secret) die('add {"linkedin": {"client_id": "…", "client_secret": "…"}} to tools/.secrets.json (setup notes at the top of tools/publish.mjs)');
-  if (li.token && li.expires > Date.now() + 60_000) return li;
-  // OAuth authorization-code flow: LinkedIn sends the browser back to a one-shot server here with a code
+  if (!secrets.linkedin?.client_id || !secrets.linkedin?.client_secret) die('add {"linkedin": {"client_id": "…", "client_secret": "…"}} to tools/.secrets.json (setup notes at the top of tools/publish.mjs)');
+  return secrets;
+}
+// the saved login, or null when there is none or it's about to expire
+export const linkedinToken = () => { const li = linkedinApp().linkedin; return li.token && li.expires > Date.now() + 60_000 ? li : null; };
+// OAuth authorization-code flow: LinkedIn sends the browser back to `redirect` with ?code=…&state=…
+export const linkedinAuthUrl = (redirect, state) => 'https://www.linkedin.com/oauth/v2/authorization?' + new URLSearchParams({ response_type: 'code', client_id: linkedinApp().linkedin.client_id, redirect_uri: redirect, scope: 'openid profile w_member_social', state });
+export async function linkedinFinish(code, redirect) {
+  const secrets = linkedinApp(), li = secrets.linkedin;
+  const tok = await (await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirect, client_id: li.client_id, client_secret: li.client_secret }),
+  })).json();
+  if (!tok.access_token) die('LinkedIn token: ' + JSON.stringify(tok));
+  const me = await (await fetch('https://api.linkedin.com/v2/userinfo', { headers: { Authorization: 'Bearer ' + tok.access_token } })).json();
+  Object.assign(li, { token: tok.access_token, expires: Date.now() + tok.expires_in * 1000, author: 'urn:li:person:' + me.sub });
+  writeJSON(SECRETS, secrets);
+  return li;
+}
+
+// the CLI's login: a one-shot server here catches LinkedIn's redirect
+async function linkedinLoginCli() {
   const state = crypto.randomUUID();
-  const code = await new Promise((ok, fail) => {
+  return linkedinToken() ?? linkedinFinish(await new Promise((ok, fail) => {
     const server = http.createServer((req, res) => {
       const u = new URL(req.url, REDIRECT);
       if (u.pathname !== '/callback') return res.end();
@@ -271,84 +329,76 @@ async function linkedinLogin() {
       else if (u.searchParams.get('code')) ok(u.searchParams.get('code'));
       else fail(new Error('LinkedIn login: ' + u.searchParams.get('error_description')));
     }).listen(PORT);  // all interfaces, so the Windows browser reaches it through WSL's localhost forwarding
-    openInBrowser('https://www.linkedin.com/oauth/v2/authorization?' + new URLSearchParams({ response_type: 'code', client_id: li.client_id, redirect_uri: REDIRECT, scope: 'openid profile w_member_social', state }));
-  });
-  const tok = await (await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT, client_id: li.client_id, client_secret: li.client_secret }),
-  })).json();
-  if (!tok.access_token) die('LinkedIn token: ' + JSON.stringify(tok));
-  const me = await (await fetch('https://api.linkedin.com/v2/userinfo', { headers: { Authorization: 'Bearer ' + tok.access_token } })).json();
-  Object.assign(li, { token: tok.access_token, expires: Date.now() + tok.expires_in * 1000, author: 'urn:li:person:' + me.sub });
-  writeJSON(SECRETS, { ...secrets, linkedin: li });
-  return li;
+    openInBrowser(linkedinAuthUrl(REDIRECT, state));
+  }), REDIRECT);
 }
 
 // ponytail: LinkedIn wants a monthly API version (YYYYMM) it still supports (~12 months); two months back is safe
-const linkedinVersion = () => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d.toISOString().slice(0, 7).replace('-', ''); };
+export const linkedinVersion = () => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d.toISOString().slice(0, 7).replace('-', ''); };
 
-async function toLinkedin(p, url, dryRun) {
-  const post = {
-    author: 'urn:li:person:<you>',
-    commentary: little(`${p.meta.title}\n\n${p.meta.summary}`),
-    visibility: 'PUBLIC',
-    distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
-    content: { article: { source: url, title: p.meta.title, description: p.meta.summary } },
-    lifecycleState: 'PUBLISHED',
-    isReshareDisabledByAuthor: false,
-  };
-  if (dryRun) return console.log(`LinkedIn: would POST https://api.linkedin.com/rest/posts (LinkedIn-Version ${linkedinVersion()})\n${JSON.stringify(post, null, 2)}`);
-  const li = await linkedinLogin();
-  post.author = li.author;
+export const linkedinPayload = (p, author = 'urn:li:person:<you>') => ({
+  author,
+  commentary: little(`${p.meta.title}\n\n${p.meta.summary}`),
+  visibility: 'PUBLIC',
+  distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
+  content: { article: { source: postUrl(p.slug), title: p.meta.title, description: p.meta.summary } },
+  lifecycleState: 'PUBLISHED',
+  isReshareDisabledByAuthor: false,
+});
+
+export async function sendLinkedin(p, li) {
   const res = await fetch('https://api.linkedin.com/rest/posts', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + li.token, 'LinkedIn-Version': linkedinVersion(), 'X-Restli-Protocol-Version': '2.0.0', 'Content-Type': 'application/json' },
-    body: JSON.stringify(post),
+    body: JSON.stringify(linkedinPayload(p, li.author)),
   });
   if (res.status !== 201) die(`LinkedIn said ${res.status}: ${await res.text()}`);
-  console.log('LinkedIn: posted', res.headers.get('x-restli-id'));
+  return res.headers.get('x-restli-id');
 }
 
-async function toSubstack(p, url, dryRun) {
-  const html = `<h1>${esc(p.meta.title)}</h1>\n<p><em>${esc(p.meta.summary)}</em></p>\n${absolutize(p.html, url)}\n<p>Originally published at <a href="${url}">${url}</a></p>\n`;
-  const file = path.join(TOOLS, 'out', `substack-${p.slug}.html`);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `<!DOCTYPE html>\n<meta charset="utf-8">\n${html}`);
-  if (dryRun) return console.log('Substack: wrote', path.relative(ROOT, file), '(nothing copied or opened)');
-  // rich-text clipboard, so pasting into Substack's editor keeps headings, links and images
-  try {
-    execFileSync('powershell.exe', ['-NoProfile', '-Command', `Set-Clipboard -AsHtml -Value (Get-Content -Raw -Encoding UTF8 '${execFileSync('wslpath', ['-w', file]).toString().trim()}')`]);
-    console.log('Substack: the post is on your clipboard; paste it into the editor that just opened, check it, publish.');
-  } catch {
-    console.log(`Substack: couldn't reach the Windows clipboard; open ${file} in a browser, select all, copy, paste into the editor.`);
-  }
-  openInBrowser(SUBSTACK);
-}
+export const substackHtml = (p) => {
+  const url = postUrl(p.slug);
+  return `<h1>${esc(p.meta.title)}</h1>\n<p><em>${esc(p.meta.summary)}</em></p>\n${absolutize(p.html, url)}\n<p>Originally published at <a href="${url}">${url}</a></p>\n`;
+};
 
 async function crosspost(slug, dryRun) {
   // a dry run can look at drafts too, so you can check a post before publishing it
   const p = readPosts({ drafts: dryRun }).find((x) => x.slug === slug) ?? die(`no published post "${slug}" (drafts can only be --dry-run)`);
-  const url = `${SITE}/journal/${slug}/`;
-  if (!dryRun) {
-    const res = await fetch(url, { method: 'HEAD' }).catch(() => ({ ok: false, status: 'offline' }));
-    if (!res.ok) die(`${url} isn't live (${res.status}). Build, commit and push first, then crosspost.`);
-  }
-  const done = readJSON(CROSSPOSTED, {});
-  for (const target of (p.meta.crosspost ?? '').split(',').map((s) => s.trim()).filter(Boolean)) {
+  if (!dryRun && !(await isLive(slug))) die(`${postUrl(slug)} isn't live. Build, commit and push first, then crosspost.`);
+  const done = crossposted();
+  for (const target of targets(p)) {
     if (done[slug]?.[target]) { console.log(`${target}: already posted ${done[slug][target]}, skipping`); continue; }
-    if (target === 'linkedin') await toLinkedin(p, url, dryRun);
-    else if (target === 'substack') await toSubstack(p, url, dryRun);
-    else { console.log(`unknown crosspost target "${target}"`); continue; }
-    if (!dryRun) { (done[slug] ??= {})[target] = new Date().toISOString().slice(0, 10); writeJSON(CROSSPOSTED, done); }
+    if (target === 'linkedin') {
+      if (dryRun) { console.log(`LinkedIn: would POST https://api.linkedin.com/rest/posts (LinkedIn-Version ${linkedinVersion()})\n${JSON.stringify(linkedinPayload(p), null, 2)}`); continue; }
+      console.log('LinkedIn: posted', await sendLinkedin(p, await linkedinLoginCli()));
+    } else if (target === 'substack') {
+      const file = path.join(TOOLS, 'out', `substack-${slug}.html`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, `<!DOCTYPE html>\n<meta charset="utf-8">\n${substackHtml(p)}`);
+      if (dryRun) { console.log('Substack: wrote', path.relative(ROOT, file), '(nothing copied or opened)'); continue; }
+      // rich-text clipboard, so pasting into Substack's editor keeps headings, links and images
+      try {
+        execFileSync('powershell.exe', ['-NoProfile', '-Command', `Set-Clipboard -AsHtml -Value (Get-Content -Raw -Encoding UTF8 '${execFileSync('wslpath', ['-w', file]).toString().trim()}')`]);
+        console.log('Substack: the post is on your clipboard; paste it into the editor that just opened, check it, publish.');
+      } catch {
+        console.log(`Substack: couldn't reach the Windows clipboard; open ${file} in a browser, select all, copy, paste into the editor.`);
+      }
+      openInBrowser(SUBSTACK);
+    } else { console.log(`unknown crosspost target "${target}"`); continue; }
+    markCrossposted(slug, target);
   }
 }
 
 // ───────── cli ─────────
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {  // run as a CLI, not when imported by the test
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {  // run as a CLI, not when imported
   const [cmd, ...rest] = process.argv.slice(2);
-  if (cmd === 'new') newPost(rest.join(' '));
-  else if (cmd === 'crosspost') await crosspost(rest.find((a) => !a.startsWith('--')) ?? die('usage: node tools/publish.mjs crosspost <slug> [--dry-run]'), rest.includes('--dry-run'));
-  else if (!cmd || cmd === '--drafts') await build({ drafts: cmd === '--drafts' });
-  else die(`unknown command "${cmd}" (see the top of tools/publish.mjs)`);
+  try {
+    if (cmd === 'new') { const slug = newPost(rest.join(' ')); console.log(`wrote posts/${slug}.md (put its images in posts/${slug}/)`); }
+    else if (cmd === 'crosspost') await crosspost(rest.find((a) => !a.startsWith('--')) ?? die('usage: node tools/publish.mjs crosspost <slug> [--dry-run]'), rest.includes('--dry-run'));
+    else if (!cmd || cmd === '--drafts') {
+      const n = (await build({ drafts: !!cmd })).length;
+      console.log(`built ${n} post${n === 1 ? '' : 's'}${cmd ? ' (drafts included: rebuild without --drafts before committing)' : ''}`);
+    }
+    else die(`unknown command "${cmd}" (see the top of tools/publish.mjs)`);
+  } catch (e) { console.error(e.message); process.exit(1); }
 }

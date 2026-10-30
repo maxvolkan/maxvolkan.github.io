@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>journal cms</title>
+        <link rel="icon" href="data:,">
+        <link rel="stylesheet" href="/site/styles.css">
+        <style>
+                body.cms {
+                        display: grid;
+                        align-items: stretch;
+                        justify-content: stretch;
+                        grid-template-columns: 240px minmax(340px, 1fr) minmax(360px, 1.2fr);
+                        height: 100dvh;
+                        margin: 0;
+                        padding: 0;
+                        overflow: hidden;
+                        background: var(--bg);
+                }
+
+                .col {
+                        display: flex;
+                        flex-direction: column;
+                        min-width: 0;
+                        min-height: 0;
+                        border-right: 1px solid var(--c1);
+                }
+
+                .bar,
+                #posts header {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: baseline;
+                        gap: 8px 16px;
+                        padding: 12px 16px;
+                }
+
+                #posts header h1 {
+                        font-size: 18px;
+                        margin-right: auto;
+                }
+
+                button.b {
+                        padding: 0;
+                        border: 0;
+                        background: none;
+                        color: var(--link);
+                        font: inherit;
+                        cursor: pointer;
+                }
+
+                button.b:hover {
+                        color: var(--c4);
+                }
+
+                button.b:disabled {
+                        color: var(--c2);
+                        cursor: default;
+                }
+
+                #list {
+                        flex: 1;
+                        overflow: auto;
+                        list-style: none;
+                }
+
+                #list button {
+                        all: unset;
+                        box-sizing: border-box;
+                        display: grid;
+                        width: 100%;
+                        padding: 8px 16px;
+                        cursor: pointer;
+                }
+
+                #list button:hover,
+                #list button.on {
+                        background: var(--c1);
+                }
+
+                #list .d,
+                .muted,
+                #meta label {
+                        color: var(--text-muted);
+                        font-size: 14px;
+                }
+
+                /* post states: draft → ready (not on the site yet) → live, or edited since it went live */
+                .st { padding: 0 4px; }
+                .st-ready { background: var(--accent); color: var(--c0); }
+                .st-live { color: var(--c4); }
+                .st-edited, .st-coming-down { color: var(--link); }
+
+                #meta {
+                        display: grid;
+                        grid-template-columns: auto 1fr;
+                        gap: 6px 12px;
+                        align-items: center;
+                        padding: 12px 16px;
+                        border-bottom: 1px solid var(--c1);
+                }
+
+                #meta :is(input[type=text], input[type=date], select) {
+                        width: 100%;
+                        padding: 4px 8px;
+                        border: 0;
+                        background: var(--c1);
+                        color: var(--c4);
+                        font: inherit;
+                }
+
+                #meta .row {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 6px 16px;
+                }
+
+                #meta .row > select { flex: 1; width: auto; }
+
+                #meta input[type=checkbox] { accent-color: var(--accent); }
+
+                .thumb {
+                        position: relative;
+                        width: 192px;
+                        cursor: crosshair;
+                }
+
+                .thumb img {
+                        display: block;
+                        width: 100%;
+                        image-rendering: pixelated;
+                }
+
+                .cross {
+                        position: absolute;
+                        width: 14px;
+                        height: 14px;
+                        border: 2px solid var(--accent);
+                        translate: -50% -50%;
+                        pointer-events: none;
+                }
+
+                #editor {
+                        flex: 1;
+                        min-height: 0;
+                        padding: 0 16px;
+                }
+
+                #frame {
+                        flex: 1;
+                        width: 100%;
+                        border: 0;
+                        background: var(--bg);
+                }
+
+                .tabs { display: none; }
+
+                dialog.window {
+                        left: 50%;
+                        top: 50%;
+                        translate: -50% -50%;
+                        width: min(640px, calc(100vw - 32px));
+                }
+
+                dialog.window::backdrop { background: rgb(0 0 0 / 0.6); }
+
+                #dlg-body > * + * { margin-top: 12px; }
+
+                #dlg pre {
+                        max-height: 40vh;
+                        overflow: auto;
+                        padding: 8px;
+                        background: var(--c1);
+                        font-size: 13px;
+                        white-space: pre-wrap;
+                }
+
+                #dlg iframe {
+                        width: 100%;
+                        height: 40vh;
+                        border: 0;
+                        background: #fff;
+                }
+
+                .err { color: var(--link); }
+
+                @media (max-width: 700px) {
+                        body.cms {
+                                grid-template-columns: 1fr;
+                                grid-template-rows: auto 1fr;
+                        }
+
+                        .tabs {
+                                display: flex;
+                                gap: 24px;
+                                padding: 10px 16px;
+                                border-bottom: 1px solid var(--c1);
+                        }
+
+                        .tabs button[aria-current] { color: var(--c4); }
+
+                        .col { display: none; border: 0; }
+
+                        body[data-tab=posts] #posts,
+                        body[data-tab=edit] #edit,
+                        body[data-tab=preview] #preview { display: flex; }
+
+                        #meta { max-height: 45dvh; overflow: auto; }
+                }
+        </style>
+</head>
+
+<body class="cms revealed" data-tab="posts">
+        <nav class="tabs">
+                <button class="b" data-tab="posts">posts</button>
+                <button class="b" data-tab="edit">edit</button>
+                <button class="b" data-tab="preview">preview</button>
+        </nav>
+
+        <aside id="posts" class="col">
+                <header>
+                        <h1>journal/</h1>
+                        <button class="b" id="new">[+ new]</button>
+                </header>
+                <ul id="list"></ul>
+                <div class="bar"><button class="b" id="publish">[ publish… ]</button></div>
+        </aside>
+
+        <main id="edit" class="col">
+                <form id="meta" autocomplete="off">
+                        <label for="f-title">title</label><input type="text" id="f-title" name="title">
+                        <label for="f-summary">summary</label><input type="text" id="f-summary" name="summary">
+                        <label for="f-date">date</label>
+                        <div class="row">
+                                <input type="date" id="f-date" name="date" style="width:auto">
+                                <label><input type="checkbox" name="draft"> draft</label>
+                        </div>
+                        <label for="f-cover">cover</label>
+                        <div class="row">
+                                <select id="f-cover" name="cover"></select>
+                                <button type="button" class="b" id="cover-up">[upload]</button>
+                                <label title="use the picture exactly as it is, not dithered"><input type="checkbox" name="asis"> as is</label>
+                        </div>
+                        <span></span>
+                        <div class="thumb" id="thumb" title="click: what to keep in view when it's cropped · double-click: centre">
+                                <img alt=""><i class="cross" hidden></i>
+                        </div>
+                        <label>to</label>
+                        <div class="row">
+                                <label><input type="checkbox" name="linkedin"> linkedin</label>
+                                <label><input type="checkbox" name="substack"> substack</label>
+                        </div>
+                </form>
+                <div class="bar">
+                        <button class="b" id="img">[+ image]</button>
+                        <button class="b" id="vim"></button>
+                        <span class="muted" id="saved"></span>
+                </div>
+                <div id="editor"></div>
+                <div class="bar">
+                        <button class="b" id="linkedin">[linkedin]</button>
+                        <button class="b" id="substack">[substack]</button>
+                        <span class="muted">·</span>
+                        <button class="b" id="rename">[rename]</button>
+                        <button class="b" id="delete">[delete]</button>
+                </div>
+                <input type="file" id="files" accept="image/*" multiple hidden>
+        </main>
+
+        <section id="preview" class="col">
+                <iframe id="frame" title="preview"></iframe>
+        </section>
+
+        <dialog id="dlg" class="window hud">
+                <header class="window-head">
+                        <h2 id="dlg-title"></h2>
+                        <form method="dialog"><button aria-label="close">[ × ]</button></form>
+                </header>
+                <div class="window-body" id="dlg-body"></div>
+        </dialog>
+
+        <script type="module">
+                import { createEditor } from '/editor.js';
+
+                const $ = (s) => document.querySelector(s);
+                const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+                const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+                // every change carries X-CMS (the server refuses changes without it)
+                async function api(url, { method = 'GET', body, headers = {} } = {}) {
+                        const raw = body instanceof Blob;
+                        const res = await fetch(url, {
+                                method,
+                                headers: { 'X-CMS': '1', ...(body && !raw ? { 'Content-Type': 'application/json' } : {}), ...headers },
+                                body: body && !raw ? JSON.stringify(body) : body,
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(data.error || res.statusText);
+                        return data;
+                }
+                const post = (url, body) => api(url, { method: 'POST', body: body ?? {} });
+
+                const form = $('#meta'), field = form.elements, frame = $('#frame');
+                let posts = [], slug = null, meta = {}, images = [];
+                let edits = 0, saved = 0, saveTimer, quiet = false, coverV = 0;
+                const dirty = () => edits !== saved;
+                const status = (text) => { $('#saved').textContent = text; };
+                addEventListener('unhandledrejection', (e) => status('! ' + (e.reason?.message ?? e.reason)));
+
+                // ───────── editor + autosave ─────────
+                let vimOn = (() => { try { return JSON.parse(localStorage.getItem('cms-vim')); } catch { return null; } })() ?? !matchMedia('(pointer: coarse)').matches;
+                const ed = createEditor($('#editor'), { vimMode: vimOn, onChange: () => quiet || touch(), onFiles: (f) => upload(f), onSave: () => save() });
+                const setBody = (text) => { quiet = true; ed.set(text); quiet = false; };
+                const showVim = () => { $('#vim').textContent = `[vim: ${vimOn ? 'on' : 'off'}]`; };
+                showVim();
+                $('#vim').onclick = () => { vimOn = !vimOn; ed.setVim(vimOn); showVim(); try { localStorage.setItem('cms-vim', vimOn); } catch {} };
+
+                function touch() {
+                        edits++;
+                        status('…');
+                        clearTimeout(saveTimer);
+                        saveTimer = setTimeout(save, 600);
+                }
+
+                async function save() {
+                        clearTimeout(saveTimer);
+                        if (!slug || !dirty()) return;
+                        const n = edits, s = slug;
+                        meta = readForm();
+                        try {
+                                await api(`/api/post/${s}`, { method: 'PUT', body: { meta, body: ed.get() } });
+                                if (s === slug) saved = Math.max(saved, n);
+                                status(dirty() ? '…' : 'saved');
+                        } catch (e) { status('! ' + e.message); }
+                }
+
+                // the form ↔ front matter; keys the form doesn't show (focus, anything hand-written) are kept
+                function readForm() {
+                        const m = { ...meta, title: field.title.value, date: field.date.value, summary: field.summary.value };
+                        const pic = field.cover.value;
+                        m.cover = field.asis.checked ? '' : pic;
+                        if (field.asis.checked && pic) m.cover_art = pic; else delete m.cover_art;
+                        if (field.draft.checked) m.draft = 'true'; else delete m.draft;
+                        m.crosspost = ['linkedin', 'substack'].filter((t) => field[t].checked).join(', ');
+                        return m;
+                }
+
+                function fillForm() {
+                        field.title.value = meta.title ?? '';
+                        field.summary.value = meta.summary ?? '';
+                        field.date.value = meta.date ?? '';
+                        field.draft.checked = meta.draft === 'true';
+                        const pic = meta.cover_art || meta.cover || '';
+                        field.cover.innerHTML = `<option value="">brain (no photo)</option>` + images.map((f) => `<option>${esc(f)}</option>`).join('');
+                        field.cover.value = images.includes(pic) ? pic : '';
+                        field.asis.checked = !!meta.cover_art;
+                        const to = (meta.crosspost ?? '').split(',').map((s) => s.trim());
+                        for (const t of ['linkedin', 'substack']) field[t].checked = to.includes(t);
+                        showThumb();
+                }
+
+                form.onsubmit = (e) => e.preventDefault();
+                form.addEventListener('input', (e) => {
+                        if (e.target === field.cover || e.target === field.asis) { coverV++; meta = readForm(); showThumb(); }
+                        touch();
+                });
+
+                // the cover as the page will show it; click it to choose what stays in view when it's cropped
+                function showThumb() {
+                        const art = field.asis.checked && field.cover.value;
+                        $('#thumb img').src = slug ? `/site/journal/${slug}/${art ? encodeURIComponent(field.cover.value) : 'cover.png'}?v=${coverV}` : '';
+                        const [x, y] = (meta.focus ?? '').split(',').map(Number);
+                        const cross = $('#thumb .cross');
+                        cross.hidden = !(x >= 0 && y >= 0);
+                        Object.assign(cross.style, { left: x * 100 + '%', top: y * 100 + '%' });
+                }
+                $('#thumb').onclick = (e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        meta.focus = `${((e.clientX - r.left) / r.width).toFixed(2)},${((e.clientY - r.top) / r.height).toFixed(2)}`;
+                        showThumb();
+                        touch();
+                };
+                $('#thumb').ondblclick = () => { delete meta.focus; showThumb(); touch(); };
+
+                // ───────── images: paste/drop into the text, [+ image], or [upload] for the cover ─────────
+                async function upload(files, asCover = false) {
+                        if (!slug) return;
+                        for (const file of files) {
+                                status(`uploading ${file.name}…`);
+                                try {
+                                        const r = await api(`/api/upload/${slug}`, { method: 'POST', body: file, headers: { 'X-Name': encodeURIComponent(file.name), 'Content-Type': file.type || 'application/octet-stream' } });
+                                        images.push(r.name);
+                                        if (asCover) { meta = { ...readForm(), cover: r.name }; delete meta.cover_art; coverV++; fillForm(); touch(); }
+                                        else ed.insert(`\n${r.markdown}\n`);
+                                        status('uploaded ' + r.name);
+                                } catch (e) { status('! ' + e.message); }
+                        }
+                }
+                let asCover = false;
+                $('#img').onclick = () => { asCover = false; $('#files').click(); };
+                $('#cover-up').onclick = () => { asCover = true; $('#files').click(); };
+                $('#files').onchange = (e) => { upload([...e.target.files], asCover); e.target.value = ''; };
+
+                // ───────── posts list ─────────
+                async function refreshList() {
+                        posts = await api('/api/posts');
+                        $('#list').innerHTML = posts.map((p) => `<li><button data-slug="${p.slug}" class="${p.slug === slug ? 'on' : ''}">
+                                <span>${esc(p.title)}</span>
+                                <span class="d">${p.date} <b class="st st-${p.state.replace(' ', '-')}">${p.state}</b>${p.crossposted.linkedin ? ' in✓' : ''}${p.crossposted.substack ? ' ss✓' : ''}</span>
+                        </button></li>`).join('') || '<li class="muted" style="padding:8px 16px">no posts yet</li>';
+                        const cur = posts.find((p) => p.slug === slug);
+                        for (const id of ['#linkedin', '#substack']) $(id).disabled = !cur;
+                        for (const id of ['#rename', '#delete']) $(id).disabled = !cur || cur.pushed;
+                        for (const id of ['#rename', '#delete']) $(id).title = cur?.pushed ? 'on the site already: its link has to stay (tick draft to take it down)' : '';
+                }
+                $('#list').onclick = (e) => { const b = e.target.closest('button'); if (b) open(b.dataset.slug, true); };
+
+                async function open(s, go = false) {
+                        await save();
+                        const d = await api(`/api/post/${s}`);
+                        slug = s;
+                        meta = d.meta;
+                        images = d.images;
+                        coverV++;
+                        fillForm();
+                        setBody(d.body);
+                        saved = edits;
+                        status('');
+                        history.replaceState(null, '', '#' + s);
+                        frame.src = `/site/journal/${s}/`;
+                        refreshList();
+                        if (go) tab('edit');
+                }
+
+                $('#new').onclick = async () => {
+                        const title = prompt('Title of the new post');
+                        if (!title) return;
+                        try { await open((await post('/api/new', { title })).slug, true); } catch (e) { alert(e.message); }
+                };
+                $('#rename').onclick = async () => {
+                        const to = prompt('New link name (journal/…/)', slug);
+                        if (!to || to === slug) return;
+                        try { await save(); await open((await post('/api/rename', { from: slug, to })).slug); } catch (e) { alert(e.message); }
+                };
+                $('#delete').onclick = async () => {
+                        if (!confirm(`Delete "${field.title.value}" and its images? This can't be undone.`)) return;
+                        try {
+                                clearTimeout(saveTimer);
+                                await api(`/api/post/${slug}`, { method: 'DELETE' });
+                                slug = null; saved = edits;
+                                await refreshList();
+                                if (posts[0]) open(posts[0].slug); else { frame.src = 'about:blank'; setBody(''); }
+                        } catch (e) { alert(e.message); }
+                };
+
+                // ───────── live: saves from here or from neovim ─────────
+                // the preview swaps in the new page body (no reload, so no flash and no lost scroll)
+                async function refreshPreview() {
+                        const url = `/site/journal/${slug}/`, doc = frame.contentDocument;
+                        if (!doc?.querySelector('.post') || !frame.contentWindow.location.pathname.endsWith(url)) { frame.src = url; return; }
+                        const next = new DOMParser().parseFromString(await (await fetch(url)).text(), 'text/html').querySelector('.post');
+                        if (!next) { frame.src = url; return; }
+                        const img = next.querySelector('.zine-cover');
+                        if (img) img.setAttribute('src', img.getAttribute('src') + '?v=' + coverV);
+                        doc.querySelector('.post').replaceWith(doc.importNode(next, true));
+                }
+                new EventSource('/events').onmessage = async (e) => {
+                        const changed = JSON.parse(e.data);
+                        refreshList();
+                        if (!slug || !changed.includes(slug)) return;
+                        if (!dirty()) {  // changed on disk (neovim) while nothing's unsaved here: take it
+                                const d = await api(`/api/post/${slug}`).catch(() => null);
+                                if (d && !dirty()) {
+                                        images = d.images;
+                                        if (d.body !== ed.get()) setBody(d.body);
+                                        if (JSON.stringify(d.meta) !== JSON.stringify(meta)) { meta = d.meta; fillForm(); }
+                                }
+                        }
+                        coverV++;
+                        showThumb();
+                        refreshPreview();
+                };
+
+                // ───────── dialogs: publish and crossposting ─────────
+                const dlg = $('#dlg');
+                const body = (html) => { $('#dlg-body').innerHTML = html; };
+                function dialog(title, html) { $('#dlg-title').textContent = title; body(html); if (!dlg.open) dlg.showModal(); }
+                const list = (label, slugs) => slugs.length ? `<p>${label}: ${slugs.map((s) => esc(posts.find((p) => p.slug === s)?.title ?? s)).join(', ')}</p>` : '';
+
+                $('#publish').onclick = async () => {
+                        await save();
+                        dialog('publish', '<p class="muted">building…</p>');
+                        try {
+                                const plan = await post('/api/publish/plan');
+                                if (!plan.files.length) return body('<p>Nothing to publish: the site already matches.</p>');
+                                body(`${list('goes live', plan.new)}${list('updated', plan.updated)}${list('taken down', plan.removed)}
+                                        <details><summary class="muted">${plan.files.length} changed files</summary><pre>${esc(plan.files.join('\n'))}</pre></details>
+                                        <p><button class="b" id="go">[ push to the site ]</button></p>`);
+                                $('#go').onclick = async () => {
+                                        body('<p class="muted">committing and pushing…</p>');
+                                        try {
+                                                const r = await post('/api/publish/go', { files: plan.files });
+                                                const watch = [...r.new, ...r.updated, ...r.removed];
+                                                body(`<p>Pushed ${esc(r.commit)}. ${watch.length ? 'Waiting for GitHub Pages (about a minute):' : 'Done.'}</p>
+                                                        <ul>${watch.map((s) => `<li>${esc(s)}: <span data-w="${s}">waiting…</span></li>`).join('')}</ul>`);
+                                                refreshList();
+                                                watch.forEach(waitLive);
+                                        } catch (e) { body(`<p class="err">${esc(e.message)}</p>`); }
+                                };
+                        } catch (e) { body(`<p class="err">${esc(e.message)}</p>`); }
+                };
+                async function waitLive(s) {
+                        const say = (t) => { const el = document.querySelector(`[data-w="${s}"]`); if (el) el.textContent = t; };
+                        for (let i = 0; i < 30; i++) {  // every 10 s for 5 minutes
+                                if ((await api(`/api/live/${s}`).catch(() => ({}))).live) { say('live ✓'); refreshList(); return; }
+                                await sleep(10_000);
+                        }
+                        say('not live after 5 minutes; check the Actions tab of the site\'s GitHub repo');
+                }
+
+                $('#linkedin').onclick = async () => {
+                        await save();
+                        dialog('linkedin', '<p class="muted">loading…</p>');
+                        try {
+                                const d = await post(`/api/crosspost/${slug}`, { target: 'linkedin' });
+                                const a = d.payload.content.article;
+                                body(`<p class="muted">This goes on your LinkedIn, public:</p>
+                                        <pre>${esc(d.payload.commentary.replace(/\\(.)/g, '$1'))}\n\n┌ ${esc(a.title)}\n│ ${esc(a.description)}\n└ ${esc(a.source)}</pre>
+                                        <details><summary class="muted">the exact request</summary><pre>${esc(d.request)}\n${esc(JSON.stringify(d.payload, null, 2))}</pre></details>
+                                        <p><button class="b" id="send">[ post it to linkedin ]</button></p>`);
+                                $('#send').onclick = async () => {
+                                        body('<p class="muted">posting…</p>');
+                                        try {
+                                                const r = await post(`/api/crosspost/${slug}`, { target: 'linkedin', send: true, origin: location.origin });
+                                                if (r.login) body(`<p>LinkedIn wants you to log in first (about every 60 days).</p><p><a href="${esc(r.login)}">[ log in to linkedin ]</a>, then press [linkedin] again.</p>`);
+                                                else { body(`<p>Posted ✓ (${esc(r.posted)})</p>`); refreshList(); }
+                                        } catch (e) { body(`<p class="err">${esc(e.message)}</p>`); }
+                                };
+                        } catch (e) { body(`<p class="err">${esc(e.message)}</p>`); }
+                };
+
+                $('#substack').onclick = async () => {
+                        await save();
+                        dialog('substack', '<p class="muted">loading…</p>');
+                        try {
+                                const d = await post(`/api/crosspost/${slug}`, { target: 'substack' });
+                                body(`<p>Substack has no way to post from outside, so this copies the post as formatted text and opens its editor: paste, check, publish there.</p>
+                                        <p><button class="b" id="copy">[ copy and open substack ]</button></p>
+                                        <iframe sandbox srcdoc="${esc(d.html)}" title="what gets copied"></iframe>`);
+                                $('#copy').onclick = () => {
+                                        const plain = new DOMParser().parseFromString(d.html, 'text/html').body.innerText;
+                                        navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([d.html], { type: 'text/html' }), 'text/plain': new Blob([plain], { type: 'text/plain' }) })])
+                                                .then(() => body(`<p>Copied. Paste it into the Substack editor that just opened, then come back:</p><p><button class="b" id="pasted">[ it's on substack ✓ ]</button></p>`),
+                                                        (e) => body(`<p class="err">Couldn't copy: ${esc(e.message)}</p>`))
+                                                .then(() => {
+                                                        const b = $('#pasted');
+                                                        if (b) b.onclick = () => post(`/api/crosspost/${slug}`, { target: 'substack', send: true })
+                                                                .then(() => { body('<p>Marked as on Substack ✓</p>'); refreshList(); }, (e) => body(`<p class="err">${esc(e.message)}</p>`));
+                                                });
+                                        window.open(d.editor, '_blank');
+                                };
+                        } catch (e) { body(`<p class="err">${esc(e.message)}</p>`); }
+                };
+
+                // ───────── phone: one column at a time ─────────
+                function tab(name) {
+                        document.body.dataset.tab = name;
+                        document.querySelectorAll('.tabs button').forEach((b) => b.toggleAttribute('aria-current', b.dataset.tab === name));
+                }
+                document.querySelectorAll('.tabs button').forEach((b) => { b.onclick = () => tab(b.dataset.tab); });
+                addEventListener('beforeunload', () => { if (dirty()) save(); });
+
+                await refreshList();
+                const linked = decodeURIComponent(location.hash.slice(1)), first = linked || posts[0]?.slug;
+                if (first && posts.some((p) => p.slug === first)) await open(first);
+                tab(linked ? 'edit' : 'posts');
+                if (new URLSearchParams(location.search).has('linkedin')) status('LinkedIn connected: press [linkedin] again to post');
+        </script>
+</body>
+
+</html>

@@ -249,6 +249,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	}
 
+	// news: journal posts and paper news, newest first by data-date ("2026-10-28" or just "2026"); CSS shows three
+	const news = document.querySelector("#news ul");
+	news?.append(...[...news.children].sort((a, b) => (b.dataset.date ?? "").localeCompare(a.dataset.date ?? "")));
+
 	document.getElementById("homebtn").onclick = () => {
 		window.location.href = "/";
 	};
