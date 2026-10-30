@@ -99,15 +99,30 @@ const FRAG = `#version 300 es
     return texture(u_brain, vec3(b, layer));
   }
 
+  // Where to read the photo for this screen pixel. A point s of the photo with depth d(s) shows up at
+  // s - offset * d(s), so search the line uv + offset * t from near (t = 1) to far for the first spot whose
+  // depth reaches t: near buildings then cover the sky behind them instead of the sky drawing over their edges.
+  #define PARALLAX_STEPS 24
+  vec2 parallax(vec2 uv, vec2 offset) {
+    float lastT = 1.0, lastF = textureLod(u_depth, uv + offset, 0.0).g - 1.0;
+    for (int i = PARALLAX_STEPS - 1; i >= 0; i--) {
+      float t = float(i) / float(PARALLAX_STEPS);
+      float f = textureLod(u_depth, uv + offset * t, 0.0).g - t;
+      if (f >= 0.0) return uv + offset * mix(t, lastT, f / max(f - lastF, 1e-5));  // between the two steps
+      lastT = t; lastF = f;
+    }
+    return uv;  // not reached: at t = 0, f = depth >= 0
+  }
+
   void main() {
     vec2 m = u_mouse * 2.0 - 1.0;  // -1..1 from centre
     vec2 drift = u_wiggle * vec2(sin(u_time * 0.5 * PI) * cos(u_time * 0.6) * 0.0075,
                                  cos(u_time * 0.8 * PI) * sin(u_time) * 0.0025);  // slow idle drift
 
-    // photo: shift where we read it by offset * depth, so near pixels move more (the PoC's trick)
+    // photo: near pixels move more with the mouse than far ones (see parallax)
     vec2 uv = coverUV(v_uv);
     vec2 offset = vec2(0.0, u_scroll * SCROLL_DISTORT) + drift + u_strength * mix(m * 0.2, m, u_turbo);
-    float v = luma(texture(u_color, uv + offset * texture(u_depth, uv).g).rgb) * u_photo;
+    float v = luma(texture(u_color, parallax(uv, offset)).rgb) * u_photo;
 
     // scrim: darken the photo behind the left text column (all of it on portrait phones, where text spans the width)
     float clear = smoothstep(0.15, 0.55, v_uv.x) * step(u_resolution.y, u_resolution.x);
@@ -238,6 +253,8 @@ async function main() {
   gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, BRAIN.w, BRAIN.h, BRAIN.frames);
   const slice = Object.assign(document.createElement('canvas'), { width: BRAIN.w, height: BRAIN.h }).getContext('2d');
   for (let i = 0; i < BRAIN.frames; i++) {
+    // a few layers per frame: all 64 at once blocks the page long enough to freeze the text reveal
+    if (i % 4 === 0) await new Promise(requestAnimationFrame);
     slice.clearRect(0, 0, BRAIN.w, BRAIN.h);
     slice.drawImage(sheet, (i % BRAIN.cols) * BRAIN.w, Math.floor(i / BRAIN.cols) * BRAIN.h, BRAIN.w, BRAIN.h, 0, 0, BRAIN.w, BRAIN.h);
     gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, BRAIN.w, BRAIN.h, 1, gl.RGBA, gl.UNSIGNED_BYTE, slice.canvas);
